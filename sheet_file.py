@@ -47,7 +47,7 @@ class SheetFile:
                 'name' : self.name,
                 'key_list': self.key_list
             }
-        with open(self.name + right_now() + '.json', 'w') as f:
+        with open(self.name + ' ' + right_now() + '.json', 'w') as f:
             json.dump(json_obj, f)
 
         pass
