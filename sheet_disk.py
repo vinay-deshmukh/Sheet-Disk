@@ -1,24 +1,11 @@
 '''Main file to run when running this program'''
-import os, sys
-import logging
+import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from sheet_file import SheetFile
+from sheet_file import SheetUpload, SheetDownload
+from utils import get_logger
 
-# Logging setup
-logger = logging.getLogger('sheet_disk.py')
-logger.setLevel(logging.DEBUG)
-
-# Handlers
-c_handler = logging.StreamHandler(sys.stdout)
-c_handler.setLevel(logging.DEBUG)
-
-# Formatter
-c_format = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(funcName)s - %(message)s')
-c_handler.setFormatter(c_format)
-
-# Add handlers to the logger
-logger.addHandler(c_handler)
+logger = get_logger()
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -45,13 +32,13 @@ def get_parser():
 
     return parser
 
-def upload_file(user_file, json):
+def upload_file(user_file, json_file):
     # When uploading a file
     # if JSON file is specified,
     # then file upload is to be resumed
     # otherwise fresh upload is to be started
 
-    if json is None:
+    if json_file is None:
         # fresh upload
         logger.info('Performing Fresh Upload!')
         with open(user_file, 'rb') as f:
@@ -61,7 +48,7 @@ def upload_file(user_file, json):
         # Get basename for user file
         base_name = os.path.basename(user_file)
 
-        with SheetFile(name=base_name,
+        with SheetUpload(name=base_name,
                 client=gc, content=content) as sheet:
             logger.info('Starting upload now!')
             sheet.start_upload()
@@ -71,10 +58,20 @@ def upload_file(user_file, json):
         raise NotImplementedError('Resume upload not implemented yet')
 
 
-def download_file(user_file, json):
+def download_file(user_file, json_file):
     # Download file via JSON data
     # user_file is path of the downloaded file
-    raise NotImplementedError('Download not implemented yet')
+
+    #raise NotImplementedError('Download not implemented yet')
+
+    import json
+    with open(json_file) as f:
+        json_dict = json.load(f)
+
+    # Create sheet file from json
+    with SheetDownload(client=gc,
+        download_path=user_file, json_dict=json_dict) as f:
+        f.start_download()
 
 def main():
     # Get parser object
