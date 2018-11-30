@@ -52,26 +52,18 @@ class SheetFile:
 
         pass
 
-    def needed_sheets(self):
-        '''Return the number of sheets needed to represent the file'''
-        quo, rem = \
-                divmod(
-                    len(self.encoded), (CELL_CHAR_LIMIT * CELLS_PER_SHEET))
-        if rem == 0:
-            return quo
-        return quo + 1
-
     def chunk_encoded(self):
         return (self.encoded[i:i + CHAR_PER_SHEET]
                     for i in range(0, len(self.encoded), CHAR_PER_SHEET))
 
     def start_upload(self):
-        # Calculate how many sheets will be needed
-        no_sheets = self.needed_sheets()
 
         for sheet_no, wk_content in enumerate(self.chunk_encoded()):
             # Create a sheet for file
-            sh = self.gc.create(self.name + str(sheet_no) + ' ' + right_now())
+            sh = self.gc.create(self.name + ' ' + str(sheet_no) + ' ' + right_now())
+
+            # Share the file so others can also access
+            sh.share('None', 'anyone', 'reader')
 
             # Upload content to file
             wks = sh.sheet1
