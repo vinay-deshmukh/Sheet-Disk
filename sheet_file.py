@@ -3,14 +3,15 @@ to and from Google Sheets'''
 
 import os, sys
 import base64
+from my_logging import get_logger
 from utils import (
         sheet_upload,
         sheet_download,
         CELL_CHAR_LIMIT,
         CELLS_PER_SHEET,
         CHAR_PER_SHEET,
-        get_logger
         )
+
 
 logger = get_logger()
 

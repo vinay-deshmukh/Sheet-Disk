@@ -3,7 +3,8 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from sheet_file import SheetUpload, SheetDownload
-from utils import get_logger
+# from utils import get_logger
+from my_logging import get_logger
 
 logger = get_logger()
 
@@ -94,12 +95,12 @@ def main():
     json = args.json
 
     if method == 'upload':
-        logger.debug('Start upload')
+        logger.info('Start upload')
         upload_file(user_file, json)
         logger.info('Upload is done!')
 
     elif method == 'download':
-        logger.debug('Start download')
+        logger.info('Start download')
         download_file(user_file, json)
         logger.info('Download is done')
 
