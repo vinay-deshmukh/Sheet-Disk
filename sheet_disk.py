@@ -1,9 +1,9 @@
 '''Main file to run when running this program'''
+
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from sheet_file import SheetUpload, SheetDownload
-# from utils import get_logger
+from sheet_classes import SheetUpload, SheetDownload
 from my_logging import get_logger
 
 logger = get_logger()

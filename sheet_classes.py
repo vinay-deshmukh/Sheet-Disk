@@ -1,4 +1,4 @@
-'''File wrapper class to be used when transfering data
+'''File wrapper classes to be used when transfering data
 to and from Google Sheets'''
 
 import os, sys
@@ -11,7 +11,6 @@ from utils import (
         CELLS_PER_SHEET,
         CHAR_PER_SHEET,
         )
-
 
 logger = get_logger()
 
@@ -54,6 +53,11 @@ class SheetUpload:
             # if key_list is empty then don't bother saving JSON
             logger.debug('Key list is empty, so not saving JSON')
             return
+
+        if exc_type:
+            # exception has occured, which means file may not have completely uploaded
+            logger.info(str(exc_type) + ' Exception has occured.'
+                        'File may not have been uploaded completely.')
 
         if exc_type and self.last_key:
             # if exception occurs, delete the last spreadsheet
