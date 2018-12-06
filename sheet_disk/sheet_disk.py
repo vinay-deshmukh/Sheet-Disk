@@ -3,8 +3,8 @@
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from sheet_classes import SheetUpload, SheetDownload
-from my_logging import get_logger
+from .sheet_classes import SheetUpload, SheetDownload
+from .my_logging import get_logger
 
 logger = get_logger()
 
@@ -80,18 +80,23 @@ def download_file(user_file, json_file):
         download_path=user_file, json_dict=json_dict) as f:
         f.start_download()
 
-def main():
+def main(raw_args=None):
+    '''This method is the public interface to sheet_disk functions'''
+
+    # raw_args
+    # https://stackoverflow.com/questions/44734858/python-calling-a-module-that-uses-argparser
+
     # Get parser object
     logger.debug('Getting parser')
     parser = get_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
     logger.debug('Args have been parsed')
 
     # Error handling
     logger.debug('Start error handling')
     if args.method == 'download' and not args.json:
         # if downloading, json needs to be specified
-        parser.error('Need to specify JSON file, when downloading')
+        logger.error('Need to specify JSON file, when downloading')
     # TODO: Verify if paths are correct, and json file is proper
     logger.debug('No errors found')
 
