@@ -71,8 +71,13 @@ class SheetUpload:
                 'key_list': self.key_list,
                 # TODO: Add valid parameter to signify if file was uploaded in its entirety
             }
-        with open(self.name + ' ' + right_now() + '.json', 'w') as f:
-            # TODO: Change filename to json, maybe
+        
+        json_filename = self.name + '.json'
+        if os.path.exists(json_filename):
+            logger.debug('JSON file already exists, creating new with timestamp')
+            json_filename = json_filename.replace('.json', ' ' + right_now() + '.json')
+
+        with open(json_filename, 'w') as f:
             logger.info('Writing json file')
             json.dump(json_obj, f)
 

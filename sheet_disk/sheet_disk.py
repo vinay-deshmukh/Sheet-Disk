@@ -41,7 +41,7 @@ def get_parser():
 
     return parser
 
-def upload_file(user_file, json_file):
+def upload_file(user_file, json_file=None):
     # When uploading a file
     # if JSON file is specified,
     # then file upload is to be resumed
