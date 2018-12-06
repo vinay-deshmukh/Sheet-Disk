@@ -24,64 +24,119 @@ The hard limit for cells in a Spreadsheet is 2 million cells, but when we fill t
 
 # How to install (TODO)
 
-`TODO`: pip install sheet_disk
+* Prerequisites:
 
-You'll need `gspread` and `oauth2client`.
+	This package makes use of `gspread`, which needs OAuth credentials to work. To get them, [Click here](https://gspread.readthedocs.io/en/latest/oauth2.html).
 
-Install them:
-`pip install gspread oauth2client`
+	After you download the OAuth credentials file, store it in a safe location. Copy it's path, and create an environment variable, named `SH_DISK_CREDS`.
 
-`gspread` needs valid Drive API credentials for use in OAuth2. [How to get them!](https://gspread.readthedocs.io/en/latest/oauth2.html)
+	For example,
 
+	![Environment variable](images/env_var.png)
 
-Store the JSON file from Google in a safe location.
+To install this package, run:
 
-Create an environment variable: SH_DISK_CREDS, which contains the path to the JSON file.
+`pip install sheet_disk`
 
-TODO: Insert image here
 
 Requirements: 
-* 3.6+ (May work on lower versions of 3.x, but isn't tested on that.), 
-* Windows (May work on Linux, MacOS, but it's not been tested)
+* Python 3.6.7+ (May work on lower versions of 3.x, but hasn't been tested on that).
+* Windows 10 (May work on Linux, MacOS, and older Windows but it's not been tested on them).
 
 # How to use
 
-* You can see the command line usage by using `-h` flag.
-1. Using as a Command Line Program _(With arguments)_
+## 1. Using as a Command Line Program
+
 	
-    * Uploading a file:
+   * Uploading a file:
        
-      ```python sheet_disk.py upload [path_to_file]```
+      `python -m sheet_disk.cli upload [path_to_file]`
       
       After uploading has finished, a JSON file will be created in your current directory. This file will help you retrieve your uploaded file from Google Sheets. 
       
-      Note: **DON'T LOSE IT. IF YOU LOSE THIS FILE, YOU CAN'T RETRIEVE YOUR FILE.**
+      Note: **DON'T LOSE THIS JSON FILE. IF YOU LOSE THIS FILE, YOU CAN'T RETRIEVE YOUR UPLOADED FILE.**
+      
+      Currently, the created sheets files are made public by default, so that you can share your files with friends, by simply sending them the JSON file.
     
-    * Downloading a file:
+   * Downloading a file:
     
-     	```python sheet_disk.py download [download_path.extension] [file_info.json]```
+     `python -m sheet_disk.cli download [download_path.extension] [file_info.json]`
         
-        Where,
+      Where,
         	
-         * download_path.extension = Download location of the file
-            
-         * file_info.json = The json file containing the information about the uploaded file, you got when you uploaded the file
-     
+       * download_path.extension = Download location for the file
+       * file_info.json = The json file containing the information about the uploaded file, you got when you uploaded the file
     
-    
-2. `TODO` Using as a Command Line Program _(Without arguments)_
+   * To see argument usage, use: 
+    `python -m sheet_disk.cli -h`
+
+
+## 2. Using in a program
 	
-    This mode is same as the above mode, only difference being, in this mode, the program will prompt you for it
-   's command line arguments instead of  you passing them in the command.
+   For using this package in a program, you can do the following:
+    
+    >>> import sheet_disk
+	>>> sheet_disk.upload_file('My File Path.jpg')
+	>>> sheet_disk.download_file('My downloaded file.jpg', 'My File Details.json')
+
+    
  
 # Sample Usage
 
-`TODO`
+* ## CLI:
 
-`TODO`: Also, add sample files showing how to interact with the module, ie 
+	* ### Code:
 	
-    python -c module arg1 arg 2
+		`python -m sheet_disk.cli upload starry_night.jpg`
+        
+        `python -m sheet_disk.cli download starry_night_download.jpg starry_night.jpg.json`
+
+	* ### Uploading a file:
+	
+    	Before Uploading:
+
+		![Before Uploading](images/cli_before_upload.png)
+
+		After Uploading:
+        
+		![After Uploading](images/cli_after_upload.png)
+
+	* ### Downloading a file:
+
+		Before Downloading:
+
+		![Before Downloading](images/cli_before_download.png)
+        
+        After Downloading:
+        
+		![After Downloading](images/cli_after_download.png)
+* ## Program:
+
+	* ### Code:
+	
+			import sheet_disk
+    	    sheet_disk.upload_file('starry_night.jpg')
+        	sheet_disk.download_file('starry_night_download.jpg', 'starry_night.jpg.json')
+
+	* ### Uploading a file:
+	 
+       	Before Uploading:
+
+		![Before Uploading](images/prog_before_upload.png)
+        
+        After Uploading:
+        
+        ![After Uploading](images/prog_after_upload.png)
     
+	* ### Downloading a file:
+	
+    	Before Downloading:
+        
+    	![Before Download](images/prog_before_download.png)
+        
+        After Downloading:
+        
+        ![After Download](images/prog_after_download.png)
 
 # Liability
 
