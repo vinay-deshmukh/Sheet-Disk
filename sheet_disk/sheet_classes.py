@@ -98,6 +98,7 @@ class SheetUpload:
 
             # Upload content to file
             wks = sh.sheet1
+            logger.info('Writing data to sheet ' + str(sheet_no))
             sheet_upload(wks, wk_content)
             logger.info('Sheet ' + str(sheet_no) + ' uploaded correctly!')
 
