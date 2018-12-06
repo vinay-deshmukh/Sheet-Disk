@@ -14,25 +14,39 @@ def get_logger():
         cur_time = str(datetime.datetime.now()).replace(':', '-').split('.')[0]
         # Get Y-M-S H:M:S
 
+        # Set which log is required
+        console = True
+        file_log = False
+
         # Logging setup
         logger = logging.getLogger('Sheet-Disk')
         logger.setLevel(logging.DEBUG)
 
-        # Handlers
-        c_handler = logging.StreamHandler(sys.stdout)
-        c_handler.setLevel(logging.INFO)
-        f_handler = logging.FileHandler('RunLog ' + cur_time + '.log', mode='w')
-        f_handler.setLevel(logging.DEBUG)
+        
+        if console:
+            # Handlers
+            c_handler = logging.StreamHandler(sys.stdout)
+            c_handler.setLevel(logging.INFO)
 
-        # Formatter
-        c_format = logging.Formatter('%(message)s')
-        c_handler.setFormatter(c_format)
-        f_format = logging.Formatter('%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
-        f_handler.setFormatter(f_format)
+            # Formatter
+            c_format = logging.Formatter('%(message)s')
+            c_handler.setFormatter(c_format)
 
-        # Add handlers to the logger
-        logger.addHandler(c_handler)
-        logger.addHandler(f_handler)
+            # Add the handler
+            logger.addHandler(c_handler)
+        
+        if file_log:
+            # Handlers
+            f_handler = logging.FileHandler('RunLog ' + cur_time + '.log', mode='w')
+            f_handler.setLevel(logging.DEBUG)
+
+            # Formatter
+            f_format = logging.Formatter('%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
+            f_handler.setFormatter(f_format)
+
+            # Add the handler
+            logger.addHandler(f_handler)
+
 
         g_logger = logger
         logger_made = True
