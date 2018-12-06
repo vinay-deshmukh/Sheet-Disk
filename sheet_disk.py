@@ -11,8 +11,16 @@ logger = get_logger()
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 
-# Insert your credentials file name here
-creds_file = 'credentials.json'
+# Get credentials file from environment variable
+creds_file = os.environ.get('SH_DISK_CREDS', None)
+
+if creds_file is None:
+    raise KeyError(
+        '''Set up environment variable: 'SH_DISK_CREDS' 
+        with the path to your Google Sheets API JSON file.
+
+        Refer to README.md for more info.''')
+
 creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file, scope)
 gc = gspread.authorize(creds)
 
@@ -62,8 +70,6 @@ def upload_file(user_file, json_file):
 def download_file(user_file, json_file):
     # Download file via JSON data
     # user_file is path of the downloaded file
-
-    #raise NotImplementedError('Download not implemented yet')
 
     import json
     with open(json_file) as f:

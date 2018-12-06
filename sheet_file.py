@@ -43,20 +43,21 @@ class SheetUpload:
         # Latest key for sheet(which may get quit)
         self.last_key = None
 
-        logger.debug('Init complete')
+        logger.debug('SheetUpload Init complete')
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_trace):
-        # TODO: Write details of file into JSON file before quitting
 
         if not self.key_list:
             # if key_list is empty then don't bother saving JSON
+            logger.debug('Key list is empty, so not saving JSON')
             return
 
         if exc_type and self.last_key:
             # if exception occurs, delete the last spreadsheet
+            logger.debug('Deleting latest key, since exception has occured')
             self.gc.del_spreadsheet(self.last_key)
 
         import json
@@ -71,7 +72,6 @@ class SheetUpload:
             logger.info('Writing json file')
             json.dump(json_obj, f)
 
-        pass
 
     def chunk_encoded(self):
         return (self.encoded[i:i + CHAR_PER_SHEET]
@@ -112,6 +112,7 @@ class SheetDownload:
         
         if os.path.exists(self.b64_file):
             # Delete b64 file on cleanup
+            logger.debug('Deleting ' + self.b64_file)
             os.remove(self.b64_file)
 
     def start_download(self):
