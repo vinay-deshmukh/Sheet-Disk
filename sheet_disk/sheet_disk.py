@@ -50,15 +50,12 @@ def upload_file(user_file, json_file=None):
     if json_file is None:
         # fresh upload
         logger.info('Performing Fresh Upload!')
-        with open(user_file, 'rb') as f:
-            logger.info('Reading file content!')
-            content = f.read()
 
         # Get basename for user file
         base_name = os.path.basename(user_file)
 
         with SheetUpload(name=base_name,
-                client=gc, content=content) as sheet:
+                client=gc, upload_file_path=user_file) as sheet:
             logger.info('Starting upload now!')
             sheet.start_upload()
             logger.info('File upload complete!')

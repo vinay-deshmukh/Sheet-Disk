@@ -2,6 +2,7 @@
 to and from Google Sheets'''
 
 import os, sys
+from functools import partial
 import base64
 from .my_logging import get_logger
 from .utils import (
@@ -15,7 +16,7 @@ from .utils import (
 logger = get_logger()
 
 class SheetUpload:
-    def __init__(self, name, client, content):
+    def __init__(self, name, client, upload_file_path):
 
         logger.debug('Start SheetUpload init')
         # Get client credentials for managing sheets
@@ -24,17 +25,8 @@ class SheetUpload:
         # Set file name
         self.name = name
 
-        # TODO: Don't read file content as one string, split into calls of f.read()
-        self.og_content = content
-
-        # Encode the input_file to b64
-        bytes_encoded = \
-            base64.b64encode(self.og_content)
-
-        # Use repr to get bytes as string
-        # [2:-1] to avoid b' and '
-        self.encoded = repr(bytes_encoded)[2:-1]
-
+        # Store file path, to retrieve data from when upload starts
+        self.upload_file_path = upload_file_path
 
         # List which stores keys of sheets
         self.key_list = []
@@ -81,13 +73,21 @@ class SheetUpload:
             logger.info('Writing json file')
             json.dump(json_obj, f)
 
+    def gen_encoded(self):
+        with open(self.upload_file_path, 'rb') as f:
+            
+            # Read in terms of total bytes we can fit in one sheet
+            chunk_size =  CHAR_PER_SHEET
 
-    def chunk_encoded(self):
-        return (self.encoded[i:i + CHAR_PER_SHEET]
-                    for i in range(0, len(self.encoded), CHAR_PER_SHEET))
+            for byte_chunk in iter(partial(f.read, chunk_size), b''):
+                # Encode file bytes to base64
+                enc64 = base64.b64encode(byte_chunk)
+
+                # Get string from base64 bytes
+                yield enc64.decode('ascii')
 
     def start_upload(self):
-        for sheet_no, wk_content in enumerate(self.chunk_encoded()):
+        for sheet_no, wk_content in enumerate(self.gen_encoded()):
             # Create a sheet for file
             logger.info('Creating sheet ' + str(sheet_no))
             sh = self.gc.create(self.name + ' ' + str(sheet_no) + ' ' + right_now())
