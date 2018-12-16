@@ -79,21 +79,24 @@ def upload(user_file, json_file=None):
     # then file upload is to be resumed
     # otherwise fresh upload is to be started
 
-    if json_file is None:
-        # fresh upload
-        logger.info('Performing Fresh Upload!')
+    # if json_file is None:
+    # fresh upload
+    #logger.info('Performing Fresh Upload!')
 
-        # Get basename for user file
-        base_name = os.path.basename(user_file)
+    # Get basename for user file
+    base_name = os.path.basename(user_file)
 
-        with SheetUpload(name=base_name,
-                client=gc, upload_file_path=user_file) as sheet:
-            logger.info('Starting upload now!')
-            sheet.start_upload()
-            logger.info('File upload complete!')
-    else:
-        # Resume upload
-        raise NotImplementedError('Resume upload not implemented yet')
+    with SheetUpload(
+            name=base_name,
+            client=gc, 
+            upload_file_path=user_file, 
+            json_file=json_file) as sheet:
+        logger.info('Starting upload now!')
+        sheet.start_upload()
+        logger.info('File upload complete!')
+    #else:
+    #    # Resume upload
+    #    raise NotImplementedError('Resume upload not implemented yet')
 
 
 def download(user_file, json_file):

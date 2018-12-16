@@ -1,10 +1,11 @@
 '''File wrapper classes to be used when transfering data
 to and from Google Sheets'''
 
-import os, sys
+import os, sys, json
 from functools import partial
 import base64
 from .my_logging import get_logger
+from .__version__ import __version__
 from .utils import (
         sheet_upload,
         sheet_download,
@@ -16,7 +17,7 @@ from .utils import (
 logger = get_logger()
 
 class SheetUpload:
-    def __init__(self, name, client, upload_file_path):
+    def __init__(self, name, client, upload_file_path, json_file=None):
 
         logger.debug('Start SheetUpload init')
         # Get client credentials for managing sheets
@@ -39,6 +40,21 @@ class SheetUpload:
         from math import ceil
         b64_size = 4 * ceil(input_size / 3)
         self.n_sheets = ceil(b64_size / CHAR_PER_SHEET)
+        logger.info('Total sheets needed: ' + str(self.n_sheets))
+
+        # Resumable upload section
+        self.j_details = None
+        if json_file:
+            logger.info('Resuming upload!')
+            with open(json_file) as f:
+                self.j_details = json.load(f)
+
+            # Read key_list from j_details
+            # Get the keys which were previously uploaded
+            self.key_list = self.j_details['key_list']
+
+        else:
+            logger.info('Fresh upload')
 
         logger.debug('SheetUpload Init complete')
 
@@ -55,7 +71,7 @@ class SheetUpload:
         if exc_type:
             # exception has occured, which means file may not have completely uploaded
             logger.info(str(exc_type) + ' Exception has occured.'
-                        'File may not have been uploaded completely.')
+                        ' File may not have been uploaded completely.')
 
         if exc_type and self.last_key:
             # if exception occurs, delete the last spreadsheet
@@ -103,7 +119,21 @@ class SheetUpload:
                 yield enc64.decode('ascii')
 
     def start_upload(self):
+        if self.j_details:
+            # Get previously uploaded sheets
+            prev_uploaded_sheets = len(self.j_details['key_list'])
+
         for sheet_no, wk_content in enumerate(self.gen_encoded()):
+
+            if self.j_details and sheet_no < prev_uploaded_sheets:
+                # Only check for prev_uploaded_sheets,
+                # if self.j_details is not None
+
+                # Skipping sheet which previously exists
+                logger.info('Sheet ' + str(sheet_no) + ' already exists!')
+                logger.info('Skipping sheet ' + str(sheet_no))
+                continue
+
             # Create a sheet for file
             logger.info('Creating sheet ' + str(sheet_no))
             sh = self.gc.create(self.name + ' ' + str(sheet_no) + ' ' + right_now())
