@@ -48,31 +48,48 @@ Requirements:
 ## 1. Using as a Command Line Program
 
 	
-   * Uploading a file:
+   ### Uploading a file:
        
-      `python -m sheet_disk.cli upload <path_to_file>`
+      python -m sheet_disk.cli upload <path_to_file>
       
-      After uploading has finished, a JSON file will be created in your current directory. This file will help you retrieve your uploaded file from Google Sheets. 
+
+   After uploading has finished, a JSON file ([Click for more details](#json_file)) will be created in your current directory. This file will help you retrieve your uploaded file from Google Sheets. 
       
+   
+      
+   Where,
+   
+   * path_to_file: The file which you want to upload
+         
       Note: **DON'T LOSE THIS JSON FILE. IF YOU LOSE THIS FILE, YOU CAN'T RETRIEVE YOUR UPLOADED FILE.**
       
-      Currently, the created sheets files are made public by default, so that you can share your files with friends, by simply sending them the JSON file.
+      Currently, the created sheets files are made public by default, so that you can share your files with friends, by simply sending them the JSON file.([Click for more details](#json_file))
+      
+   ### Resuming an upload of a file:
+   	
+    python -m sheet_disk.cli upload <path_to_file> <file_info.json>
     
-   * Downloading a file:
+   Where,
+
+   * file_info.json([Click for more details](#json_file)): **This argument is optional.** If your uploading is cut off before completion, the program will still create a json file, you can pass this json file to resume uploading from that point.
+
+   
     
-     `python -m sheet_disk.cli download <download_path> <file_info.json>`
+   ### Downloading a file:
+    
+     python -m sheet_disk.cli download <download_path> <file_info.json>
         
-      Where,
+   Where,
         	
-       * download_path = Download location for the file, 
+   * download_path = Download location for the file, 
        		
-            For Example:
+     For Example:
             	C:/Users/Me/file.jpg
                 
-       * file_info.json = The json file containing the information about the uploaded file, you got when you uploaded the file
+    * file_info.json = The json file([Click for more details](#json_file)) containing the information about the uploaded file, you got when you uploaded the file
     
-   * To see argument usage, use: 
-    `python -m sheet_disk.cli -h`
+   #### To see argument usage, use: 
+    python -m sheet_disk.cli -h
 
 
 ## 2. Using in a program
@@ -80,7 +97,14 @@ Requirements:
    For using this package in a program, you can do the following:
     
     >>> import sheet_disk
+    >>> 
+    >>> # Uploading a file
 	>>> sheet_disk.upload('My File Path.jpg')
+	>>> 
+	>>> # Resuming an upload of file
+	>>> sheet_disk.upload('My File Path.jpg', 'My File Details.json') 
+	>>> 
+	>>> # Download a file
 	>>> sheet_disk.download('My downloaded file.jpg', 'My File Details.json')
 
     
@@ -141,6 +165,19 @@ Requirements:
         After Downloading:
         
         ![After Download](images/prog_after_download.png)
+
+<a name="json_file"> </a>
+# JSON File
+
+Sheet-Disk stores the keys/ids of the spreadsheets, version of the program used when creating the file in a JSON file. This JSON file has the name of your file, and will have a timestamp if a file with the same name exists.
+
+Creation of this file will happen even if the program quits unexpectedly due to an external exception, like if your internet stops working, this file will keep track of the data that has already been uploaded to Sheets. This way you can resume uploading, if the file you were uploading is big.
+
+This JSON file is your only way to access the file contents that you have stored online, so **PLEASE KEEP THIS FILE SAFE!**
+
+You can share this file with your friends to share your uploaded files with your friends.
+
+
 
 # Liability
 
