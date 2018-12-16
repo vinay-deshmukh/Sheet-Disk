@@ -33,7 +33,7 @@ def sheet_upload(worksheet, content):
     total_cells_written = i + 1
 
     # Update the cells
-    cell_chunk = 100
+    cell_chunk = 250
     for i in range(0, total_cells_written, cell_chunk):
         wks.update_cells(all_cells[i: i+cell_chunk])
 
