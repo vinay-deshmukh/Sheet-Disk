@@ -34,6 +34,12 @@ class SheetUpload:
         # Latest key for sheet(which may get quit)
         self.last_key = None
 
+        # Number of sheets, this file will take
+        input_size = os.stat(self.upload_file_path).st_size
+        from math import ceil
+        b64_size = 4 * ceil(input_size / 3)
+        self.n_sheets = ceil(b64_size / CHAR_PER_SHEET)
+
         logger.debug('SheetUpload Init complete')
 
     def __enter__(self):
@@ -56,11 +62,19 @@ class SheetUpload:
             logger.debug('Deleting latest key, since exception has occured')
             self.gc.del_spreadsheet(self.last_key)
 
+        complete_upload = False
+        if self.n_sheets == len(self.key_list):
+            # File was completely uploaded
+            complete_upload = True
+
         import json
         json_obj = \
             {
                 'name' : self.name,
+                'complete_upload': complete_upload,
+                'n_sheets': self.n_sheets,
                 'key_list': self.key_list,
+                'version': __version__,
                 # TODO: Add valid parameter to signify if file was uploaded in its entirety
             }
         
