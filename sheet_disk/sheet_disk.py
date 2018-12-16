@@ -1,6 +1,7 @@
 '''Main file to run when running this program'''
 
 import os
+import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from .sheet_classes import SheetUpload, SheetDownload
@@ -28,16 +29,47 @@ def get_parser():
     import argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('method',
-        help='Specify download/upload action on file',
-        choices=['download', 'upload'])
+    subparsers = parser.add_subparsers(
+        dest='action',
+        help='Choose from the following:',
+        metavar='action')
+    subparsers.required = True
 
-    parser.add_argument('file',
-        help='File to be uploaded / downloaded')
+    # Upload
+    parser_upload = subparsers.add_parser(
+        'upload', 
+        help='Upload a file to Google Sheets')
 
-    parser.add_argument('json',
-        nargs='?',
-        help='Path to JSON file which contains information to download the file.',)
+    parser_upload.add_argument(
+        'upload_file',
+        help='File to be uploaded')
+
+    parser_upload.add_argument(
+        'upload_json',
+        help='JSON file to be passed for resuming an upload',
+        nargs='?')
+
+
+    # Download
+    parser_download = subparsers.add_parser(
+        'download',
+        help='Download a file from Google Sheets')
+
+    parser_download.add_argument(
+        'download_file',
+        help='Path where file is to be downloaded')
+
+    parser_download.add_argument(
+        'download_json',
+        help='Path to JSON file which contains file details')
+
+    # Delete
+    parser_delete = subparsers.add_parser(
+            'delete', 
+            help='(Not implemented) Delete a file from Google Sheets')
+    parser_delete.add_argument(
+            'json_file',
+            help='JSON file which contains details of the file')
 
     return parser
 
@@ -68,7 +100,6 @@ def download_file(user_file, json_file):
     # Download file via JSON data
     # user_file is path of the downloaded file
 
-    import json
     with open(json_file) as f:
         json_dict = json.load(f)
 
@@ -88,30 +119,69 @@ def main(raw_args=None):
     parser = get_parser()
     args = parser.parse_args(raw_args)
     logger.debug('Args have been parsed')
+    dargs = vars(args)
 
     # Error handling
     logger.debug('Start error handling')
-    if args.method == 'download' and not args.json:
-        # if downloading, json needs to be specified
-        logger.error('Need to specify JSON file, when downloading')
-    # TODO: Verify if paths are correct, and json file is proper
+    if dargs['action'] == 'upload':
+        if not os.path.exists(dargs['upload_file']):
+            logger.error(dargs['upload_file'] + ' file doesn\'t exist!')
+            raise FileNotFoundError(dargs['upload_file'])
+
+        if dargs.get('upload_json', False):
+            # Only enter this block, if 'upload_json' exists
+            if not os.path.exists(dargs['upload_json']):
+                logger.error(dargs['upload_json'] + 'doesn\'t exist!')
+                raise FileNotFoundError(dargs['upload_json'])
+            with open(dargs['upload_json']) as f:
+                # Will throw json error if file is not valid
+                try: json.load(f)
+                except json.JSONDecodeError as j:
+                    logger.error(dargs['upload_json'] + ' is not a valid JSON file')
+                    raise j
+
+    if dargs['action'] == 'download':
+
+        if not os.path.exists(dargs['download_json']):
+            logger.error(dargs['download_json'] + ' file doesn\'t exist!')
+            raise FileNotFoundError(dargs['download_json'])
+
+        with open(dargs['download_json']) as f:
+            try: json.load(f)
+            except JSON.JSONDecodeError as j:
+                logger.error(dargs['download_json'] + ' is not a valid JSON file')
+                raise j
+
+    if dargs['action'] == 'delete':
+        raise NotImplementedError()
+
     logger.debug('No errors found')
 
     # MAIN START
-    method = args.method
-    user_file = args.file
-    json = args.json
-
-    if method == 'upload':
+    
+    if dargs['action'] == 'upload':
         logger.info('Start upload')
-        upload_file(user_file, json)
+
+        up_file = dargs['upload_file']
+        up_json = dargs['upload_json']
+
+        upload_file(up_file, up_json)
         logger.info('Upload is done!')
 
-    elif method == 'download':
+    elif dargs['action'] == 'download':
         logger.info('Start download')
+
+        do_file = dargs['download_file']
+        do_file = dargs['download_json']
+
         download_file(user_file, json)
         logger.info('Download is done')
 
+    elif dargs['action'] == 'delete':
+        raise NotImplementedError()
+
+    else:
+        raise ValueError('Invalid parameters')
 
 if __name__ == '__main__':
     main()
