@@ -77,7 +77,9 @@ class SheetUpload:
         with open(self.upload_file_path, 'rb') as f:
             
             # Read in terms of total bytes we can fit in one sheet
-            chunk_size =  CHAR_PER_SHEET
+            # b64 gives 4 bytes for input 3 bytes,
+            # so calculate input size such that b64 is CHAR_PER_SHEET
+            chunk_size =  CHAR_PER_SHEET // 4 * 3
 
             for byte_chunk in iter(partial(f.read, chunk_size), b''):
                 # Encode file bytes to base64
