@@ -73,7 +73,7 @@ def get_parser():
 
     return parser
 
-def upload_file(user_file, json_file=None):
+def upload(user_file, json_file=None):
     # When uploading a file
     # if JSON file is specified,
     # then file upload is to be resumed
@@ -96,7 +96,7 @@ def upload_file(user_file, json_file=None):
         raise NotImplementedError('Resume upload not implemented yet')
 
 
-def download_file(user_file, json_file):
+def download(user_file, json_file):
     # Download file via JSON data
     # user_file is path of the downloaded file
 
@@ -165,7 +165,7 @@ def main(raw_args=None):
         up_file = dargs['upload_file']
         up_json = dargs['upload_json']
 
-        upload_file(up_file, up_json)
+        upload(up_file, up_json)
         logger.info('Upload is done!')
 
     elif dargs['action'] == 'download':
@@ -174,7 +174,7 @@ def main(raw_args=None):
         do_file = dargs['download_file']
         do_file = dargs['download_json']
 
-        download_file(user_file, json)
+        download(user_file, json)
         logger.info('Download is done')
 
     elif dargs['action'] == 'delete':

@@ -22,7 +22,7 @@ The hard limit for cells in a Spreadsheet is 2 million cells, but when we fill t
 **Note**: There is a 33% overhead that comes with converting files to their `base64` representation.
 
 
-# How to install (TODO)
+# How to install
 
 * Prerequisites:
 
@@ -50,7 +50,7 @@ Requirements:
 	
    * Uploading a file:
        
-      `python -m sheet_disk.cli upload [path_to_file]`
+      `python -m sheet_disk.cli upload <path_to_file>`
       
       After uploading has finished, a JSON file will be created in your current directory. This file will help you retrieve your uploaded file from Google Sheets. 
       
@@ -60,11 +60,15 @@ Requirements:
     
    * Downloading a file:
     
-     `python -m sheet_disk.cli download [download_path.extension] [file_info.json]`
+     `python -m sheet_disk.cli download <download_path> <file_info.json>`
         
       Where,
         	
-       * download_path.extension = Download location for the file
+       * download_path = Download location for the file, 
+       		
+            For Example:
+            	C:/Users/Me/file.jpg
+                
        * file_info.json = The json file containing the information about the uploaded file, you got when you uploaded the file
     
    * To see argument usage, use: 
@@ -76,8 +80,8 @@ Requirements:
    For using this package in a program, you can do the following:
     
     >>> import sheet_disk
-	>>> sheet_disk.upload_file('My File Path.jpg')
-	>>> sheet_disk.download_file('My downloaded file.jpg', 'My File Details.json')
+	>>> sheet_disk.upload('My File Path.jpg')
+	>>> sheet_disk.download('My downloaded file.jpg', 'My File Details.json')
 
     
  
@@ -115,8 +119,8 @@ Requirements:
 	* ### Code:
 	
 			import sheet_disk
-    	    sheet_disk.upload_file('starry_night.jpg')
-        	sheet_disk.download_file('starry_night_download.jpg', 'starry_night.jpg.json')
+    	    sheet_disk.upload('starry_night.jpg')
+        	sheet_disk.download('starry_night_download.jpg', 'starry_night.jpg.json')
 
 	* ### Uploading a file:
 	 

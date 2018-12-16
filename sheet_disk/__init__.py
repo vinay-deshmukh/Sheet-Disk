@@ -10,7 +10,7 @@ from .__version__ import (
 )
 
 from .sheet_disk import (
-    upload_file,
-    download_file,
+    upload,
+    download,
     main,
 )
