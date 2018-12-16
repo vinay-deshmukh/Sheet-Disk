@@ -71,7 +71,7 @@ class SheetUpload:
 
         with open(json_filename, 'w') as f:
             logger.info('Writing json file')
-            json.dump(json_obj, f)
+            json.dump(json_obj, f, indent=4)
 
     def gen_encoded(self):
         with open(self.upload_file_path, 'rb') as f:
