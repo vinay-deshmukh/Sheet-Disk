@@ -174,10 +174,10 @@ def main(raw_args=None):
     elif dargs['action'] == 'download':
         logger.info('Start download')
 
-        do_file = dargs['download_file']
-        do_file = dargs['download_json']
+        down_file = dargs['download_file']
+        down_json = dargs['download_json']
 
-        download(user_file, json)
+        download(down_file, down_json)
         logger.info('Download is done')
 
     elif dargs['action'] == 'delete':
