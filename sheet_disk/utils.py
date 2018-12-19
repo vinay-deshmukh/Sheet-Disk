@@ -8,7 +8,7 @@ logger = get_logger()
 # Chars allowed in each cell
 # MAX STORAGE
 # CELL_CHAR_LIMIT = 50000 - 1 # -1 for padding char
-CELL_CHAR_LIMIT = 49500
+CELL_CHAR_LIMIT = 49500 # +1 for the quote character
 
 # Cells allowed per sheet
 CELLS_PER_SHEET = 1000 # A1:A1000
@@ -96,6 +96,94 @@ def sheet_upload(worksheet, content, sheet_progress):
 
 def sheet_download(worksheet):
     wks = worksheet
-    all_cells = wks.range(WKS_RANGE)
 
-    return (cell.value for cell in all_cells)
+    n_threads = 10
+    data_list = [None] * n_threads
+    data_lock = threading.Lock()
+
+    thread_details = {
+        'wks': wks,
+        'data_list': data_list,
+        'data_lock': data_lock
+    }
+
+    thread_list = []
+    for t_no, start, end in work_divider(no_of_cells=CELLS_PER_SHEET, n_threads=n_threads):
+        t = threading.Thread(
+                target=worker,
+                name='Thread ' + str(t_no),
+                args=(t_no, start, end, thread_details),
+                )
+
+        logger.debug('Created thread ' + str(t_no))
+        thread_list.append(t)
+        t.daemon = True
+        t.start()
+        logger.debug('Started thread ' + str(t_no))
+
+    interval = 0.8 # sec
+    counter = 1
+    length = 20
+    MyConsoleHandler.change_terminator('\r')
+
+    while any( t.is_alive() for t in thread_list ):
+        # While any of the threads is alive
+        # ie while atleast one thread is alive
+
+        prog = '#' * (counter%(length+1)) + '-' * (length - (counter%(length+1)))
+        msg = prog # TODO: Add sheet progress data as well
+        logger.info(msg)
+
+        counter += 1
+        time.sleep(interval)
+
+
+    # Print 100% message
+    MyConsoleHandler.restore_terminator()
+    prog = '#' * length
+    msg = prog
+    logger.info(msg)
+
+    
+    logger.info("All threads are aliven't!")
+
+    for t in thread_list:
+        # Making certain all threads are stopped
+        t.join()
+        logger.debug(t.name + ' joined')
+
+    for row in data_list:
+        for cell in row:
+            yield cell.value
+
+
+def worker(thread_no, start, end, thread_details):#, wks, data_list):
+    wks = thread_details['wks']
+    data_list = thread_details['data_list']
+    data_lock = thread_details['data_lock']
+
+    this_thread = threading.current_thread()
+
+    logger.debug(this_thread.name + ': Starting download')
+    t_cells = wks.range('A' + str(start) + ':A' + str(end))
+    logger.debug(this_thread.name + ': done download')
+
+    with data_lock:
+        data_list[thread_no] = t_cells
+        logger.debug('Thread ' + str(thread_no) + ' done!')
+
+
+def work_divider(no_of_cells, n_threads):
+    '''Divide the no of cells almost equally among n_threads'''
+
+    # https://math.stackexchange.com/a/1081099
+    
+    N = no_of_cells
+    M = n_threads
+    for i, k in enumerate(range(M)):
+        start_index = (N * k) // M + 1
+        inc = (N *(k+1))//M - start_index 
+        end_index = start_index + inc
+        
+        # i is the thread number
+        yield i, start_index, end_index
