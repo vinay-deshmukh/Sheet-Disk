@@ -1,6 +1,10 @@
 '''This file contains the main interfacing
 functions that are needed to access google sheets'''
 
+import threading, time
+from .my_logging import MyConsoleHandler, get_logger
+logger = get_logger()
+
 # Chars allowed in each cell
 # MAX STORAGE
 # CELL_CHAR_LIMIT = 50000 - 1 # -1 for padding char
@@ -24,18 +28,53 @@ def sheet_upload(worksheet, content):
     wks = worksheet
     all_cells = wks.range(WKS_RANGE)
 
-    for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT)):
+    for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT), 1):
 
         cell = all_cells[i]
         # Add ' to prevent interpretation as formula
         cell.value = "'" + part
 
-    total_cells_written = i + 1
+    total_cells_written = i # since enumerate starts at 1
 
     # Update the cells
     cell_chunk = 250
     for i in range(0, total_cells_written, cell_chunk):
-        wks.update_cells(all_cells[i: i+cell_chunk])
+        f = lambda : wks.update_cells(all_cells[i: i+cell_chunk])
+        t = threading.Thread(target=f)
+        t.daemon = True
+        t.start()
+
+        MyConsoleHandler.change_terminator('\r')
+        # Change the line terminator so all subsequent lines overwrite the 
+        # previous line, since we are printing a progress bar
+        # Where, overwriting will give illusion of loading animation
+
+        count = 0
+        interval = 0.5 # only display every `interval` seconds
+        length = 20 # length of the progress bar
+        cells_done = i
+        f_str = 'Sheet {:d}/{:d} | {:' + str(length) +'s} | {:d}/{:d} cells done'
+        while t.is_alive():
+
+            time.sleep(interval)
+
+            prog_str = '#' * (count%(length+1) ) + '-' * ( length - (count%(length+1) ))
+            # TODO: Using -1, until we get total sheets, and current sheets from caller
+            msg = f_str.format(-1, -1, prog_str, cells_done, total_cells_written)
+            logger.info(msg)
+
+            count += 1
+
+    
+    MyConsoleHandler.restore_terminator()
+    # Restoring '\n' as terminator
+    # So, next .info() will end with newline
+    # And subsequent calls to .info() will work normally
+
+    # Print completed progress bar
+    prog_str = '#' * length
+    msg = f_str.format(-1, -1, prog_str, total_cells_written, total_cells_written)
+    logger.info(msg)
 
 
 def sheet_download(worksheet):

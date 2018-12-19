@@ -1,16 +1,27 @@
 '''Logging utilities are stored in this file'''
 
+import logging
+import datetime, sys
+        
 # On module init
 logger_made = False
 g_logger = None
+
+class MyConsoleHandler(logging.StreamHandler):
+    # Modify this when printing progress bar
+    terminator = logging.StreamHandler.terminator
+    @classmethod
+    def change_terminator(cls, repl):
+        cls.terminator = repl
+    @classmethod
+    def restore_terminator(cls):
+        cls.terminator = logging.StreamHandler.terminator
 
 def get_logger():
     global g_logger, logger_made
     if not logger_made:
         # if logger is not created, then create it
 
-        import logging
-        import datetime, sys
         cur_time = str(datetime.datetime.now()).replace(':', '-').split('.')[0]
         # Get Y-M-S H:M:S
 
@@ -25,7 +36,7 @@ def get_logger():
         
         if console:
             # Handlers
-            c_handler = logging.StreamHandler(sys.stdout)
+            c_handler = MyConsoleHandler(sys.stdout)
             c_handler.setLevel(logging.INFO)
 
             # Formatter
