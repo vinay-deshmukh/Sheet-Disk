@@ -228,6 +228,10 @@ class SheetDownload:
 
             # Decode b64 back to original encoding
             decoded_bytes = base64.b64decode(bytes_b64)
+            # Padding "'" doesn't cause error due to 
+            # b64decode method
+            # https://docs.python.org/3.6/library/base64.html#base64.b64decode
+            
             down.write(decoded_bytes)
 
         logger.info('File has been decoded!')
