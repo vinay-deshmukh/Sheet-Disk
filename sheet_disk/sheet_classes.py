@@ -30,21 +30,18 @@ class SheetUpload:
         self.upload_file_path = upload_file_path
 
         # List which stores keys of sheets
-        self.key_list = []
+        self.key_list = None
+
+        # No of sheets this file will need
+        self.n_sheets = None
 
         # Latest key for sheet(which may get quit)
         self.last_key = None
 
-        # Number of sheets, this file will take
-        input_size = os.stat(self.upload_file_path).st_size
-        from math import ceil
-        b64_size = 4 * ceil(input_size / 3)
-        self.n_sheets = ceil(b64_size / CHAR_PER_SHEET)
-        logger.info('Total sheets needed: ' + str(self.n_sheets))
-
-        # Resumable upload section
+        # Dict that will hold the json file's attributes
         self.j_details = None
         if json_file:
+            # Resumable upload section
             logger.info('Resuming upload!')
             with open(json_file) as f:
                 self.j_details = json.load(f)
@@ -53,8 +50,24 @@ class SheetUpload:
             # Get the keys which were previously uploaded
             self.key_list = self.j_details['key_list']
 
+            # Get n_sheets from j_details
+            self.n_sheets = self.j_details['n_sheets']
+
         else:
             logger.info('Fresh upload')
+
+            # Init list to empty for fresh upload
+            self.key_list = []
+
+            # Only calculate the no of sheets if it's a fresh upload
+            input_size = os.stat(self.upload_file_path).st_size
+            from math import ceil
+            b64_size = 4 * ceil(input_size / 3)
+            self.n_sheets = ceil(b64_size / CHAR_PER_SHEET)
+        
+        logger.debug('Key list size : ' + str(len(self.key_list)))
+        logger.info('Total sheets needed: ' + str(self.n_sheets))
+
 
         logger.debug('SheetUpload Init complete')
 
