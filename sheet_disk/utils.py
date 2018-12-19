@@ -154,7 +154,7 @@ def sheet_download(worksheet):
 
     for row in data_list:
         for cell in row:
-            yield cell.value
+            yield cell.value[1:] # Remove padding char
 
 
 def worker(thread_no, start, end, thread_details):#, wks, data_list):

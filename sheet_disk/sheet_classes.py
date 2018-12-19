@@ -222,17 +222,19 @@ class SheetDownload:
             # Read from encoded file, convert to literal bytes
             # And write to download_path
 
-            # TODO: Introduce chunking here
-            # Read string form of bytes, and convert to actual bytes
-            bytes_b64 = bytes(b64_f.read(), 'ascii')
+            chunk_size = 10 * (10 ** 6)  # 10 megabyte
+            chunk_size = chunk_size * 4
+            # 4 b64 bytes for every 3 input bytes
 
-            # Decode b64 back to original encoding
-            decoded_bytes = base64.b64decode(bytes_b64)
-            # Padding "'" doesn't cause error due to 
-            # b64decode method
-            # https://docs.python.org/3.6/library/base64.html#base64.b64decode
-            
-            down.write(decoded_bytes)
+            for chunk in iter(partial(b64_f.read, chunk_size), ''):
+                
+                # Read string form of bytes, and convert to actual bytes
+                bytes_b64 = bytes(chunk, 'ascii')
+
+                # Decode b64 back to original encoding
+                decoded_bytes = base64.b64decode(bytes_b64)
+                
+                down.write(decoded_bytes)
 
         logger.info('File has been decoded!')
 
