@@ -28,13 +28,13 @@ def sheet_upload(worksheet, content):
     wks = worksheet
     all_cells = wks.range(WKS_RANGE)
 
-    for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT), 1):
+    for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT)):
 
         cell = all_cells[i]
         # Add ' to prevent interpretation as formula
         cell.value = "'" + part
 
-    total_cells_written = i # since enumerate starts at 1
+    total_cells_written = i + 1
 
     # Update the cells
     cell_chunk = 250
