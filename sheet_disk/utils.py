@@ -94,8 +94,15 @@ def sheet_upload(worksheet, content, sheet_progress):
     logger.info(msg)
 
 
-def sheet_download(worksheet):
+def sheet_download(worksheet, current_sheet):
+    '''
+    Download content from given worksheet instance
+
+    worksheet = The worksheet object from which we are downloading data
+    sheet_progress = A int which tells us the current sheet number
+    '''
     wks = worksheet
+    sh_cur = current_sheet
 
     n_threads = 10
     data_list = [None] * n_threads
@@ -124,6 +131,10 @@ def sheet_download(worksheet):
     interval = 0.8 # sec
     counter = 1
     length = 20
+    f_str = 'Sheet {:d} | {:' + str(length) + 's}' #' | {:d} cells done'
+    # TODO: Add cell counts 
+    # Might be redundant since threads get data very quickly at times
+
     MyConsoleHandler.change_terminator('\r')
 
     while any( t.is_alive() for t in thread_list ):
@@ -131,7 +142,7 @@ def sheet_download(worksheet):
         # ie while atleast one thread is alive
 
         prog = '#' * (counter%(length+1)) + '-' * (length - (counter%(length+1)))
-        msg = prog # TODO: Add sheet progress data as well
+        msg = f_str.format(sh_cur, prog)
         logger.info(msg)
 
         counter += 1
@@ -141,7 +152,7 @@ def sheet_download(worksheet):
     # Print 100% message
     MyConsoleHandler.restore_terminator()
     prog = '#' * length
-    msg = prog
+    msg = f_str.format(sh_cur, prog)
     logger.info(msg)
 
     

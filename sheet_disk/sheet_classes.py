@@ -195,14 +195,20 @@ class SheetDownload:
         with open(self.b64_file, 'w') as b64_file:
             # Write to b64_file in chunks
 
-            for n_key, key in enumerate(self.key_list):
+            for sheet_no, key in enumerate(self.key_list, 1):
+                # Start sheet_no at 1
+                # so output is 
+                # 1/5 and not 0/5
 
-                logger.debug('Open sheet ' + str(n_key))
+                logger.debug('Open sheet ' + str(sheet_no))
                 sh = self.gc.open_by_key(key)
-                wk = sh.sheet1
+                wks = sh.sheet1
 
-                logger.debug('Start download of sheet ' + str(n_key))
-                sheet_content = sheet_download(wk)
+                logger.debug('Start download of sheet ' + str(sheet_no))
+                sheet_content = \
+                    sheet_download(
+                        wks, 
+                        current_sheet=sheet_no)
 
                 _first = False # Check if first iteration of loop
                 for one_cell in sheet_content:
