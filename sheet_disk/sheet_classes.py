@@ -174,11 +174,20 @@ class SheetUpload:
 
 class SheetDownload:
     def __init__(self, client, download_path, json_dict):
-        
+
+        if not json_dict['complete_upload']:
+            # Stop download if file isn't originally uploaded completely
+            msg = 'File encoded in JSON file wasn\'t uploaded completely!'
+            logger.error(msg)
+            raise ValueError(msg)
+
+
         self.gc = client
         self.download_path = download_path
         self.key_list = json_dict['key_list']
         self.b64_file = download_path + '.b64'
+
+        
 
     def __enter__(self):
         return self
