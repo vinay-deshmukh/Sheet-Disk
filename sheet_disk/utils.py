@@ -24,9 +24,21 @@ def chunk_cell(string, cell_size):
     return (string[i:i+cell_size]
             for i in range(0, len(string), cell_size))
 
-def sheet_upload(worksheet, content):
+def sheet_upload(worksheet, content, sheet_progress):
+    '''
+    Upload the given content to passed Worksheet instance.
+
+    worksheet = The worksheet object to which we are uploading data
+    content = The content which we need to write in the worksheet
+    sheet_progress = A 2-tuple indicating 
+            * current sheet being uploaded  (int)
+            * total sheets to be used       (int)
+    '''
+
     wks = worksheet
     all_cells = wks.range(WKS_RANGE)
+    sh_cur = sheet_progress[0]
+    sh_total = sheet_progress[1]
 
     for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT)):
 
@@ -59,8 +71,10 @@ def sheet_upload(worksheet, content):
             time.sleep(interval)
 
             prog_str = '#' * (count%(length+1) ) + '-' * ( length - (count%(length+1) ))
-            # TODO: Using -1, until we get total sheets, and current sheets from caller
-            msg = f_str.format(-1, -1, prog_str, cells_done, total_cells_written)
+            msg = f_str.format(
+                        sh_cur, sh_total, 
+                        prog_str, 
+                        cells_done, total_cells_written)
             logger.info(msg)
 
             count += 1
@@ -73,7 +87,10 @@ def sheet_upload(worksheet, content):
 
     # Print completed progress bar
     prog_str = '#' * length
-    msg = f_str.format(-1, -1, prog_str, total_cells_written, total_cells_written)
+    msg = f_str.format(
+                sh_total, sh_total, 
+                prog_str, 
+                total_cells_written, total_cells_written)
     logger.info(msg)
 
 

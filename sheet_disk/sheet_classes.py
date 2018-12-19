@@ -136,11 +136,14 @@ class SheetUpload:
             # Get previously uploaded sheets
             prev_uploaded_sheets = len(self.j_details['key_list'])
 
-        for sheet_no, wk_content in enumerate(self.gen_encoded()):
+        for sheet_no, wk_content in enumerate(self.gen_encoded(), 1):
+            # Enumerate from 1 so 
+            # progress is shown as as 1/5, and not 0/5
 
-            if self.j_details and sheet_no < prev_uploaded_sheets:
+            if self.j_details and sheet_no < prev_uploaded_sheets + 1:
                 # Only check for prev_uploaded_sheets,
-                # if self.j_details is not None
+                # Use +1 since index is starting at 1
+                # So Progress is shown as 1/5, and not 0/5
 
                 # Skipping sheet which previously exists
                 logger.info('Sheet ' + str(sheet_no) + ' already exists!')
@@ -158,7 +161,10 @@ class SheetUpload:
             # Upload content to file
             wks = sh.sheet1
             logger.info('Writing data to sheet ' + str(sheet_no))
-            sheet_upload(wks, wk_content)
+
+            sheet_upload(wks, wk_content, 
+                    sheet_progress=(sheet_no, self.n_sheets))
+
             logger.info('Sheet ' + str(sheet_no) + ' uploaded correctly!')
 
             # Store it's key after successful upload
