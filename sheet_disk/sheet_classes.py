@@ -204,9 +204,13 @@ class SheetDownload:
                 logger.debug('Start download of sheet ' + str(n_key))
                 sheet_content = sheet_download(wk)
 
-                logger.debug('Write downloaded content to b64 file')
+                _first = False # Check if first iteration of loop
                 for one_cell in sheet_content:
                     b64_file.write(one_cell)
+                    if not _first:
+                        # Display this message only after download has started
+                        logger.debug('Write downloaded content to b64 file')
+                        _first = True
 
         logger.info('Encoded file created!')
         logger.info('Now, starting decoding!')
