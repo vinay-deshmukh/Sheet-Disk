@@ -185,63 +185,161 @@ class SheetDownload:
         self.gc = client
         self.download_path = download_path
         self.key_list = json_dict['key_list']
-        self.b64_file = download_path + '.b64'
+        self.n_sheets = json_dict['n_sheets']
 
+
+        self.sheet_progress_file = download_path + '.progress' + '.b64'
+        '''
+        This file will be created only if doesn't exist.
+
+        This file will store progress in the following format:
+        If n_sheets == 4:
+        self.sheet_progress_file:
+        0000
+        // No newline at the end
+
+        0 = Sheet hasn't been downloaded
+        1 = Sheet has been downloaded completely, and should not be downloaded again
+
+        At initialization, this file should be read to determine which sheets need to be downloaded again
+
+        // in exit
+        if file is made of completely zeroes, then progress file will be deleted.
+        Even if there is a single one, the progress file will be saved.
+        '''
+        if not os.path.exists(self.sheet_progress_file):
+            with open(self.sheet_progress_file, 'w') as f:
+                # Create 0's for all sheets
+                f.write('0' * self.n_sheets)
+
+
+        # Create list to hold temp files to store progress
+        self.sheet_files = []
+        '''
+        This list will contains paths of the files which are used to download
+        sheets into,
+        and status of the sheet, denoting whether sheet has been downloaded or not
+        '''
+        with open(self.sheet_progress_file, 'r+') as f:
+            # Read sheet progress from file
+
+            for i in range(1, self.n_sheets + 1):
+                # Start sheet counter at 1, not 0
+
+                f.seek(i-1, 0) # Go to i-1 from start
+                filename = download_path + '.sheet' + str(i) + '.b64'
+                # Convert the 1 or 0 from file to boolean
+                done = bool(int(f.read(1)))
+
+                self.sheet_files.append( (filename, done) )
         
+        # Boolean to signify if decoding is complete
+        # We use this to delete progress file
+        self.decoding_complete = False
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_trace):
-        
-        if os.path.exists(self.b64_file):
-            # Delete b64 file on cleanup
-            logger.debug('Deleting ' + self.b64_file)
-            os.remove(self.b64_file)
+
+        with open(self.sheet_progress_file, 'r') as f:
+            # Get sheet file statuses from progress file
+            filestatus = [bool(int(i)) for i in f.read()]
+
+        if not any(filestatus):
+            # if any of the status is not true,
+            # that means no sheet was downloaded correctly
+            # So delete progress file
+            
+            logger.info('No sheets were downloaded completely!')
+            logger.info('Deleting progress file')
+            os.remove(self.sheet_progress_file)
+
+        elif all(filestatus):
+            # If all files are downloaded
+            # Check if all have been decoded
+            if self.decoding_complete:
+                # if decoding is done,
+                # then delete sheet and progress files
+
+                logger.info('Deleting progress file')
+                os.remove(self.sheet_progress_file)
+
+                for fi, file_and_bool in enumerate(self.sheet_files, 1):
+                    file, _ = file_and_bool
+                    # _ is used to ignore the bool available with sheet file
+                    # see declaration of self.sheet_files for more details
+                    logger.info('Deleting sheet file' + str(fi))
+                    os.remove(file)
 
     def start_download(self):
 
-        with open(self.b64_file, 'w') as b64_file:
-            # Write to b64_file in chunks
+        for sheet_no, key in enumerate(self.key_list, 1):
+            # Start sheet_no at 1
+            # so output is 
+            # 1/5 and not 0/5
 
-            for sheet_no, key in enumerate(self.key_list, 1):
-                # Start sheet_no at 1
-                # so output is 
-                # 1/5 and not 0/5
+            # Get current sheet file path, and status
+            current_sheet_path, status = self.sheet_files[sheet_no - 1]
 
-                logger.debug('Open sheet ' + str(sheet_no))
-                sh = self.gc.open_by_key(key)
-                wks = sh.sheet1
+            # Check whether current sheet has already been downloaded
+            if status:
+                logger.info('Sheet ' + str(sheet_no) + ' has already been downloaded!')
+                logger.info('Skipping sheet ' + str(sheet_no))
+                continue
 
-                logger.debug('Start download of sheet ' + str(sheet_no))
-                sheet_content = \
-                    sheet_download(
-                        wks, 
-                        current_sheet=sheet_no)
+            logger.debug('Open sheet ' + str(sheet_no))
+            sh = self.gc.open_by_key(key)
+            wks = sh.sheet1
+
+            logger.debug('Start download of sheet ' + str(sheet_no))
+            sheet_content = \
+                sheet_download(
+                    wks, 
+                    current_sheet=sheet_no
+                    )
+
+            # write the data into appropriate sheet file
+            with open(current_sheet_path, 'w') as file_current:
 
                 _first = False # Check if first iteration of loop
                 for one_cell in sheet_content:
-                    b64_file.write(one_cell)
+                    file_current.write(one_cell)
                     if not _first:
                         # Display this message only after download has started
-                        logger.debug('Write downloaded content to b64 file')
+                        logger.debug('Writing downloaded content to sheet ' 
+                                        + str(sheet_no) + ' file')
                         _first = True
 
-        logger.info('Encoded file created!')
-        logger.info('Now, starting decoding!')
-        self.decode_file()
+            # After writing to file has been complete
+            # Set flag in progress file
+            with open(self.sheet_progress_file, 'r+') as f:
+                # Go to sheet_no-1 char of file, from start of file
+                # Since sheet_no is 1-indexed
+                f.seek(sheet_no - 1, 0)
+                f.write('1') # Flag current sheet as done
+                logger.info('Sheet ' + str(sheet_no) + ' content has been saved!')
 
-    def decode_file(self):
-        with open(self.download_path, 'wb') as down,\
-                open(self.b64_file     , 'r') as b64_f:
-            # Read from encoded file, convert to literal bytes
+
+        logger.info('Encoded file(s) created!')
+        logger.info('Now, starting decoding!')
+        self._decode_file()
+
+    def _decode_file(self):
+        with open(self.download_path, 'wb') as down:
+            # Read from encoded sheet file(s),
+            # Convert to literal bytes and then to base64
             # And write to download_path
 
             chunk_size = 10 * (10 ** 6)  # 10 megabyte
             chunk_size = chunk_size * 4
             # 4 b64 bytes for every 3 input bytes
+            # hence, force chunk_size to be multiple for 4
 
-            for chunk in iter(partial(b64_f.read, chunk_size), ''):
+            for chunk in self._multi_file_serial_read(
+                                self.sheet_files, 
+                                chunk_size=chunk_size
+                                ):
                 
                 # Read string form of bytes, and convert to actual bytes
                 bytes_b64 = bytes(chunk, 'ascii')
@@ -252,8 +350,52 @@ class SheetDownload:
                 down.write(decoded_bytes)
 
         logger.info('File has been decoded!')
+        self.decoding_complete = True
+        
 
+    def _multi_file_serial_read(self, list_files, chunk_size):
 
+        class SerialChunkFile:
+            __slots__ = 'file', 'position'
+            def __init__(self, file, position):
+                self.file = file
+                self.position = position
+
+        content_list = []
+        for file, _ in list_files:
+            # _ is used to ignore the bool available with sheet file
+            # see declaration of self.sheet_files for more details
+            content_list.append( SerialChunkFile(file, 0) )
+            # 0 denotes beginning of file
+
+        ci = 0
+        while True:
+            cur_content1 = content_list[ci] 
+            with open(cur_content1.file) as f:
+                f.seek(cur_content1.position, 0)
+                data = f.read(chunk_size)
+                cur_content1.position = f.tell()
+
+            if len(data) < chunk_size:
+                ci += 1
+                if ci < len(content_list):
+                    cur_content2 = content_list[ci]
+                    with open(cur_content2.file) as f:
+
+                        f.seek(cur_content2.position, 0)
+                        data = data + f.read( chunk_size - len(data) )
+                        cur_content2.position = f.tell()
+                else:
+                    # Restore ci to last index
+                    ci -= 1
+
+            if not data:
+                logger.debug('All files read')
+                break
+
+            yield data
+
+        
 def right_now():
     '''Return Y:M:D H:M:S'''
     import datetime
