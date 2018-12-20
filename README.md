@@ -32,7 +32,7 @@ The hard limit for cells in a Spreadsheet is 2 million cells, but when we fill t
 
 	For example,
 
-	![Environment variable](images/env_var.png)
+	![Environment variable](https://user-images.githubusercontent.com/32487576/50295990-6c9c3b00-049f-11e9-8635-b1e895ac09bc.png)
 
 To install this package, run:
 
@@ -125,21 +125,21 @@ Requirements:
 	
     	Before Uploading:
 
-		![Before Uploading](images/cli_before_upload.png)
+		![Before Uploading](https://user-images.githubusercontent.com/32487576/50295988-6c03a480-049f-11e9-99f7-3763cd4e5fda.png)
 
 		After Uploading:
         
-		![After Uploading](images/cli_after_upload.png)
+		![After Uploading](https://user-images.githubusercontent.com/32487576/50295998-6e65fe80-049f-11e9-8eb3-36ab485b554c.png)
 
 	* ### Downloading a file:
 
 		Before Downloading:
 
-		![Before Downloading](images/cli_before_download.png)
+		![Before Downloading](https://user-images.githubusercontent.com/32487576/50295987-6c03a480-049f-11e9-91d7-7b623a5bd49b.png)
         
         After Downloading:
         
-		![After Downloading](images/cli_after_download.png)
+		![After Downloading](https://user-images.githubusercontent.com/32487576/50295997-6dcd6800-049f-11e9-9b50-d2ee0b2d0688.png)
 * ## Program:
 
 	* ### Code:
@@ -152,21 +152,21 @@ Requirements:
 	 
        	Before Uploading:
 
-		![Before Uploading](images/prog_before_upload.png)
+		![Before Uploading](https://user-images.githubusercontent.com/32487576/50297334-9b67e080-04a2-11e9-9254-d63d5a1c8b09.png)
         
         After Uploading:
         
-        ![After Uploading](images/prog_after_upload.png)
+        ![After Uploading](https://user-images.githubusercontent.com/32487576/50295993-6d34d180-049f-11e9-84b1-0b9426bdfd37.png)
     
 	* ### Downloading a file:
 	
     	Before Downloading:
         
-    	![Before Download](images/prog_before_download.png)
+    	![Before Download](https://user-images.githubusercontent.com/32487576/50297337-9c990d80-04a2-11e9-9074-56ff00062ae3.png)
         
         After Downloading:
         
-        ![After Download](images/prog_after_download.png)
+        ![After Download](https://user-images.githubusercontent.com/32487576/50295992-6c9c3b00-049f-11e9-9336-6af03bedf2a5.png)
 
 <a name="json_file"> </a>
 # JSON File
