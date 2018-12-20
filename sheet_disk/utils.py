@@ -38,6 +38,9 @@ def sheet_upload(worksheet, content, sheet_progress):
 
     wks = worksheet
     all_cells = wks.range(WKS_RANGE)
+    # Very inexpensive, quick operation 
+    # since wks is empty for new file
+
     sh_cur = sheet_progress[0]
     sh_total = sheet_progress[1]
 
@@ -95,15 +98,18 @@ def sheet_upload(worksheet, content, sheet_progress):
     logger.info(msg)
 
 
-def sheet_download(worksheet, current_sheet):
+def sheet_download(worksheet, sheet_progress):
     '''
     Download content from given worksheet instance
 
     worksheet = The worksheet object from which we are downloading data
-    sheet_progress = A int which tells us the current sheet number
+    sheet_progress = A 2-tuple indicating 
+            * current sheet being uploaded  (int)
+            * total sheets to be used       (int)
     '''
     wks = worksheet
-    sh_cur = current_sheet
+    sh_cur = sheet_progress[0]
+    sh_total = sheet_progress[1]
 
     n_threads = 10
     data_list = [None] * n_threads
@@ -140,7 +146,7 @@ def sheet_download(worksheet, current_sheet):
     length = 20
     completed_cells = 0
     latest_done_cells = 0 # re init for each sheet
-    f_str = 'Sheet {:d} | {:' + str(length) + 's} | {:d} cells done'
+    f_str = 'Sheet {:d}/{:d} | {:' + str(length) + 's} | {:d} cells done'
     # TODO: Add cell counts 
     # Might be redundant since threads get data very quickly at times
 
@@ -158,7 +164,7 @@ def sheet_download(worksheet, current_sheet):
 
         completed_cells += latest_done_cells
 
-        msg = f_str.format(sh_cur, prog, completed_cells)
+        msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
         logger.info(msg)
 
         if not any( t.is_alive() for t in thread_list):
@@ -177,7 +183,7 @@ def sheet_download(worksheet, current_sheet):
     # Print 100% message
     MyConsoleHandler.restore_terminator()
     prog = '#' * length
-    msg = f_str.format(sh_cur, prog, completed_cells)
+    msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
     logger.info(msg)
 
     

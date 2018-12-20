@@ -296,7 +296,7 @@ class SheetDownload:
             sheet_content = \
                 sheet_download(
                     wks, 
-                    current_sheet=sheet_no
+                    sheet_progress=(sheet_no, self.n_sheets)
                     )
 
             # write the data into appropriate sheet file
