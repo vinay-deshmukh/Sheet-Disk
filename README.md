@@ -26,7 +26,7 @@ The hard limit for cells in a Spreadsheet is 2 million cells, but when we fill t
 
 * Prerequisites:
 
-	This package makes use of `gspread`, which needs OAuth credentials to work. To get them, [Click here](https://gspread.readthedocs.io/en/latest/oauth2.html).
+	This package makes use of `gspread`, which needs OAuth credentials to work. To see how to get them, [Click here](https://github.com/vinay-deshmukh/Sheet-Disk/blob/master/TUTORIAL.md).
 
 	After you download the OAuth credentials file, store it in a safe location. Copy it's path, and create an environment variable, named `SH_DISK_CREDS`.
 
@@ -88,6 +88,8 @@ Requirements:
                 
     * file_info.json = The json file([Click for more details](#json_file)) containing the information about the uploaded file, you got when you uploaded the file
     
+   Note: If your download is interrupted for some reason, you can just the run the above command again and Sheet-Disk will resume your download from the last completely downloaded sheet.
+    
    #### To see argument usage, use: 
     python -m sheet_disk.cli -h
 
@@ -99,13 +101,13 @@ Requirements:
     >>> import sheet_disk
     >>> 
     >>> # Uploading a file
-	>>> sheet_disk.upload('My File Path.jpg')
-	>>> 
-	>>> # Resuming an upload of file
-	>>> sheet_disk.upload('My File Path.jpg', 'My File Details.json') 
-	>>> 
-	>>> # Download a file
-	>>> sheet_disk.download('My downloaded file.jpg', 'My File Details.json')
+  	>>> sheet_disk.upload('My File Path.jpg')
+  	>>> 
+  	>>> # Resuming an upload of file
+  	>>> sheet_disk.upload('My File Path.jpg', 'My File Details.json') 
+  	>>> 
+  	>>> # Download a file
+  	>>> sheet_disk.download('My downloaded file.jpg', 'My File Details.json')
 
     
  
