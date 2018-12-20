@@ -2,6 +2,7 @@
 functions that are needed to access google sheets'''
 
 import threading, time
+from queue import Queue
 from .my_logging import MyConsoleHandler, get_logger
 logger = get_logger()
 
@@ -107,11 +108,17 @@ def sheet_download(worksheet, current_sheet):
     n_threads = 10
     data_list = [None] * n_threads
     data_lock = threading.Lock()
+    data_count_queue = Queue()
+    # this queue is used to get the number of cells
+    # completed by a thread
+    # Threads will put (no of cells done) in queue
+    # progress bar print will get them and increment counter
 
     thread_details = {
         'wks': wks,
         'data_list': data_list,
-        'data_lock': data_lock
+        'data_lock': data_lock,
+        'data_count_queue': data_count_queue,
     }
 
     thread_list = []
@@ -131,19 +138,37 @@ def sheet_download(worksheet, current_sheet):
     interval = 0.8 # sec
     counter = 1
     length = 20
-    f_str = 'Sheet {:d} | {:' + str(length) + 's}' #' | {:d} cells done'
+    completed_cells = 0
+    latest_done_cells = 0 # re init for each sheet
+    f_str = 'Sheet {:d} | {:' + str(length) + 's} | {:d} cells done'
     # TODO: Add cell counts 
     # Might be redundant since threads get data very quickly at times
 
     MyConsoleHandler.change_terminator('\r')
 
-    while any( t.is_alive() for t in thread_list ):
+    while any( t.is_alive() for t in thread_list) or not data_count_queue.empty():
         # While any of the threads is alive
         # ie while atleast one thread is alive
+        # or
+        # while queue is not empty
 
         prog = '#' * (counter%(length+1)) + '-' * (length - (counter%(length+1)))
-        msg = f_str.format(sh_cur, prog)
+        latest_done_cells = data_count_queue.get()
+        data_count_queue.task_done()
+
+        completed_cells += latest_done_cells
+
+        msg = f_str.format(sh_cur, prog, completed_cells)
         logger.info(msg)
+
+        if not any( t.is_alive() for t in thread_list):
+            # if all threads are dead
+            # empty the queue quickly and break out
+            logger.debug('All threads are unalive so emptying the queue and breaking out')
+            while not data_count_queue.empty():
+                completed_cells += data_count_queue.get()
+                data_count_queue.task_done()
+            break 
 
         counter += 1
         time.sleep(interval)
@@ -152,7 +177,7 @@ def sheet_download(worksheet, current_sheet):
     # Print 100% message
     MyConsoleHandler.restore_terminator()
     prog = '#' * length
-    msg = f_str.format(sh_cur, prog)
+    msg = f_str.format(sh_cur, prog, completed_cells)
     logger.info(msg)
 
     
@@ -164,25 +189,40 @@ def sheet_download(worksheet, current_sheet):
         logger.debug(t.name + ' joined')
 
     for row in data_list:
-        for cell in row:
-            yield cell.value[1:] # Remove padding char
+        if row is not None:
+            for cell in row:
+                yield cell.value[1:] # Remove padding char
 
 
 def worker(thread_no, start, end, thread_details):#, wks, data_list):
     wks = thread_details['wks']
     data_list = thread_details['data_list']
     data_lock = thread_details['data_lock']
+    data_count_queue = thread_details['data_count_queue']
 
-    this_thread = threading.current_thread()
+    name = threading.current_thread().name
 
-    logger.debug(this_thread.name + ': Starting download')
+    logger.debug(name + ': Starting download')
     t_cells = wks.range('A' + str(start) + ':A' + str(end))
-    logger.debug(this_thread.name + ': done download')
+    logger.debug(name + ': done download')
 
+    if t_cells[0].value == '':
+        # if cell is empty
+        # dont send back 
+        logger.debug(name + ' contains empty cells')
+        logger.debug(name + ' end: Does not return data')
+        return
+
+    logger.debug(name + ' contains data')
     with data_lock:
         data_list[thread_no] = t_cells
-        logger.debug('Thread ' + str(thread_no) + ' done!')
+    logger.debug(name + ' has assigned data to data_list')
 
+    total_cells_done = end - start + 1
+    data_count_queue.put(total_cells_done)
+
+    logger.debug(name + ' has put progress to queue')
+    logger.debug(name + ' end: Returned data')
 
 def work_divider(no_of_cells, n_threads):
     '''Divide the no of cells almost equally among n_threads'''
