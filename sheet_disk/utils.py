@@ -85,7 +85,8 @@ def sheet_upload(worksheet, content, sheet_progress):
     thread_runner_factory(
         thread_list, 
         data_count_queue, 
-        sheet_progress)
+        sheet_progress,
+        total_cells=total_cells_written)
 
     return total_cells_written
 
@@ -153,7 +154,8 @@ def sheet_download(worksheet, sheet_progress, cell_count):
     thread_runner_factory(
             thread_list, 
             data_count_queue, 
-            sheet_progress)
+            sheet_progress,
+            total_cells=cell_count)
     # the threads assign data to data_list, which is
     # passed as argument to each thread
     # Each thread can access data_list using data_lock
@@ -186,7 +188,7 @@ def worker_download(thread_no, start, end, thread_details):
     logger.debug(name + ' has put progress to queue')
     logger.debug(name + ' end: Returned data')
 
-def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
+def thread_runner_factory(thread_list, data_count_queue, sheet_progress, total_cells):
     '''
     Takes a list of threads, and manages their concurrency and also 
     prints appropriate progress bars.
@@ -212,7 +214,7 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
     completed_cells = 0
     latest_done_cells = 0 # re init for each sheet
     
-    f_str = 'Sheet {:d}/{:d} | {:' + str(length) + 's} | {:d} cells done'
+    f_str = 'Sheet {:d}/{:d} | {:' + str(length) + 's} | {:d}/{:d} cells done'
 
     MyConsoleHandler.change_terminator('\r')
 
@@ -235,7 +237,7 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
             # Only execute if queueEmpty error doesn't occur
             completed_cells += latest_done_cells
 
-        msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
+        msg = f_str.format(sh_cur, sh_total, prog, completed_cells, total_cells)
         logger.info(msg)
 
         if not any( t.is_alive() for t in thread_list ):
@@ -258,7 +260,7 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
     # Print 100% message
     MyConsoleHandler.restore_terminator()
     prog = '#' * length
-    msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
+    msg = f_str.format(sh_cur, sh_total, prog, completed_cells, total_cells)
     logger.info(msg)
 
     logger.debug("All threads are aliven't!")
