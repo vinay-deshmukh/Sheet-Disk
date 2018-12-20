@@ -91,12 +91,7 @@ def upload(user_file, json_file=None):
             client=gc, 
             upload_file_path=user_file, 
             json_file=json_file) as sheet:
-        logger.info('Starting upload now!')
         sheet.start_upload()
-        logger.info('File upload complete!')
-    #else:
-    #    # Resume upload
-    #    raise NotImplementedError('Resume upload not implemented yet')
 
 
 def download(user_file, json_file):
@@ -163,22 +158,28 @@ def main(raw_args=None):
     # MAIN START
     
     if dargs['action'] == 'upload':
-        logger.info('Start upload')
+        logger.info('')
+        # Create space
+
+        logger.info('Starting upload...')
 
         up_file = dargs['upload_file']
         up_json = dargs['upload_json']
 
         upload(up_file, up_json)
-        logger.info('Upload is done!')
+        logger.info('File upload is complete!')
 
     elif dargs['action'] == 'download':
-        logger.info('Start download')
+        logger.info('')
+        # Create space
+
+        logger.info('Starting download...')
 
         down_file = dargs['download_file']
         down_json = dargs['download_json']
 
         download(down_file, down_json)
-        logger.info('Download is done')
+        logger.info('File download is complete!')
 
     elif dargs['action'] == 'delete':
         raise NotImplementedError()

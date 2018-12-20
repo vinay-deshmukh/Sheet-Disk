@@ -261,7 +261,7 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
     msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
     logger.info(msg)
 
-    logger.info("All threads are aliven't!")
+    logger.debug("All threads are aliven't!")
 
     for t in thread_list:
         # Making certain all threads are stopped

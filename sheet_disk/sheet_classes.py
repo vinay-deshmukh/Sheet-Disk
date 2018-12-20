@@ -4,7 +4,7 @@ to and from Google Sheets'''
 import os, sys, json
 from functools import partial
 import base64
-from .my_logging import get_logger
+from .my_logging import get_logger, MyConsoleHandler
 from .__version__ import __version__
 from .utils import (
         sheet_upload,
@@ -47,7 +47,7 @@ class SheetUpload:
         self.j_details = None
         if json_file:
             # Resumable upload section
-            logger.info('Resuming upload!')
+            logger.info('Resume uploading of file...')
             with open(json_file) as f:
                 self.j_details = json.load(f)
 
@@ -59,7 +59,7 @@ class SheetUpload:
             self.n_sheets = self.j_details['n_sheets']
 
         else:
-            logger.info('Fresh upload')
+            logger.info('Uploading a new file...')
 
             # Init list to empty for fresh upload
             self.key_list = []
@@ -81,6 +81,12 @@ class SheetUpload:
 
     def __exit__(self, exc_type, exc_value, exc_trace):
 
+        MyConsoleHandler.restore_terminator()
+        # Reset terminator before exiting
+
+        logger.info('')
+        # Create space after uploading has finished
+
         if not self.key_list:
             # if key_list is empty then don't bother saving JSON
             logger.debug('Key list is empty, so not saving JSON')
@@ -89,7 +95,7 @@ class SheetUpload:
         if exc_type:
             # exception has occured, which means file may not have completely uploaded
             logger.info(str(exc_type) + ' Exception has occured.'
-                        ' File may not have been uploaded completely.')
+                        ' File may not have been uploaded completely.\n\n')
 
         if exc_type and self.last_key:
             # if exception occurs, delete the last spreadsheet
@@ -121,7 +127,7 @@ class SheetUpload:
             json_filename = json_filename.replace('.json', ' ' + right_now() + '.json')
 
         with open(json_filename, 'w') as f:
-            logger.info('Writing json file')
+            logger.info('Creating JSON file!')
             json.dump(json_obj, f, indent=4)
 
     def gen_encoded(self):
@@ -148,6 +154,9 @@ class SheetUpload:
             # Enumerate from 1 so 
             # progress is shown as as 1/5, and not 0/5
 
+            # Create space between each sheet
+            logger.info('')
+
             if self.j_details and sheet_no < prev_uploaded_sheets + 1:
                 # Only check for prev_uploaded_sheets,
                 # Use +1 since index is starting at 1
@@ -159,7 +168,7 @@ class SheetUpload:
                 continue
 
             # Create a sheet for file
-            logger.info('Creating sheet ' + str(sheet_no))
+            logger.debug('Creating sheet ' + str(sheet_no) + '/' + str(self.n_sheets) + '...')
             sh = self.gc.create(self.name + ' ' + str(sheet_no) + ' ' + right_now())
 
             # Share the file so others can also access
@@ -168,7 +177,7 @@ class SheetUpload:
 
             # Upload content to file
             wks = sh.sheet1
-            logger.info('Writing data to sheet ' + str(sheet_no))
+            logger.info('Uploading data to sheet ' + str(sheet_no) + '/' + str(self.n_sheets) + '...')
 
             wk_cell_count = sheet_upload(wks, wk_content, 
                     sheet_progress=(sheet_no, self.n_sheets))
@@ -184,6 +193,8 @@ class SheetUpload:
 
 class SheetDownload:
     def __init__(self, client, download_path, json_dict):
+
+        logger.debug('SheetDownload init start')
 
         if not json_dict['complete_upload']:
             # Stop download if file isn't originally uploaded completely
@@ -251,6 +262,9 @@ class SheetDownload:
         # We use this to delete progress file
         self.decoding_complete = False
 
+        logger.info('Total sheets needed: ' + str(self.n_sheets))
+        logger.debug('SheetDownload init complete')
+
     def get_cell_count(self, sheet_no):
         '''
         Return the no of cells in the given sheet_no (1-indexed)
@@ -277,6 +291,12 @@ class SheetDownload:
 
     def __exit__(self, exc_type, exc_value, exc_trace):
 
+        MyConsoleHandler.restore_terminator()
+        # Reset terminator before exiting
+
+        logger.info('')
+        # Create space
+
         with open(self.sheet_progress_file, 'r') as f:
             # Get sheet file statuses from progress file
             filestatus = [bool(int(i)) for i in f.read()]
@@ -287,8 +307,17 @@ class SheetDownload:
             # So delete progress file
             
             logger.info('No sheets were downloaded completely!')
-            logger.info('Deleting progress file')
+            logger.debug('Deleting progress file')
             os.remove(self.sheet_progress_file)
+
+            logger.debug('Deleting sheet files too if they exist.')
+            for fi, file_and_bool in enumerate(self.sheet_files, 1):
+                    file, _ = file_and_bool
+                    # _ is used to ignore the bool available with sheet file
+                    # see declaration of self.sheet_files for more details
+                    if os.path.exists(file):
+                        logger.debug('Deleting sheet file' + str(fi))
+                        os.remove(file)
 
         elif all(filestatus):
             # If all files are downloaded
@@ -297,15 +326,23 @@ class SheetDownload:
                 # if decoding is done,
                 # then delete sheet and progress files
 
-                logger.info('Deleting progress file')
+                logger.info('Performing cleanup!')
+
+                logger.debug('Deleting progress file')
                 os.remove(self.sheet_progress_file)
 
                 for fi, file_and_bool in enumerate(self.sheet_files, 1):
                     file, _ = file_and_bool
                     # _ is used to ignore the bool available with sheet file
                     # see declaration of self.sheet_files for more details
-                    logger.info('Deleting sheet file' + str(fi))
+                    logger.debug('Deleting sheet file' + str(fi))
                     os.remove(file)
+
+
+        if exc_type:
+            # if exception exists
+            logger.info(str(exc_type) + ' Exception has occured.'
+                        ' File may not have been downloaded completely.\n\n')
 
     def start_download(self):
 
@@ -314,20 +351,23 @@ class SheetDownload:
             # so output is 
             # 1/5 and not 0/5
 
+            logger.info('')
+            # Create space
+
             # Get current sheet file path, and status
             current_sheet_path, status = self.sheet_files[sheet_no - 1]
 
             # Check whether current sheet has already been downloaded
             if status:
                 logger.info('Sheet ' + str(sheet_no) + ' has already been downloaded!')
-                logger.info('Skipping sheet ' + str(sheet_no))
+                logger.info('Skipping sheet ' + str(sheet_no) + '/' + str(self.n_sheets))
                 continue
 
             logger.debug('Open sheet ' + str(sheet_no))
             sh = self.gc.open_by_key(key)
             wks = sh.sheet1
 
-            logger.debug('Start download of sheet ' + str(sheet_no))
+            logger.info('Downloading sheet ' + str(sheet_no) + '/' + str(self.n_sheets) + '...')
             sheet_content = \
                 sheet_download(
                     wks,
@@ -354,11 +394,11 @@ class SheetDownload:
                 # Since sheet_no is 1-indexed
                 f.seek(sheet_no - 1, 0)
                 f.write('1') # Flag current sheet as done
-                logger.info('Sheet ' + str(sheet_no) + ' content has been saved!')
+                logger.debug('Sheet ' + str(sheet_no) + ' content has been saved!')
 
 
-        logger.info('Encoded file(s) created!')
-        logger.info('Now, starting decoding!')
+        logger.debug('Encoded file(s) created!')
+        logger.debug('Now, starting decoding!')
         self._decode_file()
 
     def _decode_file(self):
@@ -385,7 +425,7 @@ class SheetDownload:
                 
                 down.write(decoded_bytes)
 
-        logger.info('File has been decoded!')
+        logger.debug('File has been decoded!')
         self.decoding_complete = True
         
 
