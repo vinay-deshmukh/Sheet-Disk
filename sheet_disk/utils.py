@@ -28,6 +28,7 @@ def chunk_cell(string, cell_size):
 def sheet_upload(worksheet, content, sheet_progress):
     '''
     Upload the given content to passed Worksheet instance.
+    Returns total cells written in the worksheet
 
     worksheet = The worksheet object to which we are uploading data
     content = The content which we need to write in the worksheet
@@ -97,12 +98,16 @@ def sheet_upload(worksheet, content, sheet_progress):
                 total_cells_written, total_cells_written)
     logger.info(msg)
 
+    return total_cells_written
 
-def sheet_download(worksheet, sheet_progress):
+
+def sheet_download(worksheet, sheet_progress, cell_count):
     '''
     Download content from given worksheet instance
 
     worksheet = The worksheet object from which we are downloading data
+    instance_sheetdownload = an instance of the SheetDownload class being
+        used to download the sheet
     sheet_progress = A 2-tuple indicating 
             * current sheet being uploaded  (int)
             * total sheets to be used       (int)
@@ -128,7 +133,11 @@ def sheet_download(worksheet, sheet_progress):
     }
 
     thread_list = []
-    for t_no, start, end in work_divider(no_of_cells=CELLS_PER_SHEET, n_threads=n_threads):
+    for t_no, start, end in work_divider(
+                    no_of_cells=cell_count,
+                    n_threads=n_threads
+                    ):
+
         t = threading.Thread(
                 target=worker,
                 name='Thread ' + str(t_no),
@@ -212,14 +221,6 @@ def worker(thread_no, start, end, thread_details):#, wks, data_list):
     t_cells = wks.range('A' + str(start) + ':A' + str(end))
     logger.debug(name + ': done download')
 
-    if t_cells[0].value == '':
-        # if cell is empty
-        # dont send back 
-        logger.debug(name + ' contains empty cells')
-        logger.debug(name + ' end: Does not return data')
-        return
-
-    logger.debug(name + ' contains data')
     with data_lock:
         data_list[thread_no] = t_cells
     logger.debug(name + ' has assigned data to data_list')

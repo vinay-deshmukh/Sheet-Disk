@@ -38,6 +38,11 @@ class SheetUpload:
         # Latest key for sheet(which may get quit)
         self.last_key = None
 
+        # Total cell count
+        # Do not init from file,
+        # since it will be incomplete
+        self.cell_count = 0
+
         # Dict that will hold the json file's attributes
         self.j_details = None
         if json_file:
@@ -104,8 +109,11 @@ class SheetUpload:
                 'n_sheets': self.n_sheets,
                 'key_list': self.key_list,
                 'version': __version__,
-                # TODO: Add valid parameter to signify if file was uploaded in its entirety
             }
+
+        # include cell count only if file is complete
+        if complete_upload:
+            json_obj['cell_count'] = self.cell_count
         
         json_filename = self.name + '.json'
         if os.path.exists(json_filename):
@@ -162,8 +170,10 @@ class SheetUpload:
             wks = sh.sheet1
             logger.info('Writing data to sheet ' + str(sheet_no))
 
-            sheet_upload(wks, wk_content, 
+            wk_cell_count = sheet_upload(wks, wk_content, 
                     sheet_progress=(sheet_no, self.n_sheets))
+
+            self.cell_count += wk_cell_count
 
             logger.info('Sheet ' + str(sheet_no) + ' uploaded correctly!')
 
@@ -186,7 +196,11 @@ class SheetDownload:
         self.download_path = download_path
         self.key_list = json_dict['key_list']
         self.n_sheets = json_dict['n_sheets']
+        self.cell_count = json_dict['cell_count']
 
+        self.quotient, self.remainder = divmod(self.cell_count, CELLS_PER_SHEET)
+        # Calculated here, instead of calculating inside function call
+        # Use function get_cell_count(sheet_no) to find how many cells a sheet has
 
         self.sheet_progress_file = download_path + '.progress' + '.b64'
         '''
@@ -236,6 +250,27 @@ class SheetDownload:
         # Boolean to signify if decoding is complete
         # We use this to delete progress file
         self.decoding_complete = False
+
+    def get_cell_count(self, sheet_no):
+        '''
+        Return the no of cells in the given sheet_no (1-indexed)
+
+        Example:
+        >>> divmod(2423, 1000)
+        >>> (2, 423)
+        so for sheets 1 to 2, we should return 1000
+        but for sheet 3, we need to return 423
+        '''
+        if sheet_no <= 0 or sheet_no > self.quotient+1:
+            msg = 'Sheet no can only be between 1 and n_sheets=' + self.n_sheets
+            logger.error(msg)
+            raise ValueError(msg)
+
+        if sheet_no <= self.quotient:
+            return CELLS_PER_SHEET
+        if sheet_no == self.quotient + 1:
+            return self.remainder
+        
 
     def __enter__(self):
         return self
@@ -295,8 +330,9 @@ class SheetDownload:
             logger.debug('Start download of sheet ' + str(sheet_no))
             sheet_content = \
                 sheet_download(
-                    wks, 
-                    sheet_progress=(sheet_no, self.n_sheets)
+                    wks,
+                    sheet_progress=(sheet_no, self.n_sheets),
+                    cell_count=self.get_cell_count(sheet_no)
                     )
 
             # write the data into appropriate sheet file
