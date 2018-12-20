@@ -2,7 +2,7 @@
 functions that are needed to access google sheets'''
 
 import threading, time
-from queue import Queue
+from queue import Queue, Empty as queueEmpty
 from .my_logging import MyConsoleHandler, get_logger
 logger = get_logger()
 
@@ -20,6 +20,8 @@ WKS_RANGE = 'A1:A1000'
 # Characters allowed in one sheet
 CHAR_PER_SHEET = CELL_CHAR_LIMIT * CELLS_PER_SHEET
 
+# No. of threads to use
+N_THREADS = 11
 
 def chunk_cell(string, cell_size):
     return (string[i:i+cell_size]
@@ -42,9 +44,6 @@ def sheet_upload(worksheet, content, sheet_progress):
     # Very inexpensive, quick operation 
     # since wks is empty for new file
 
-    sh_cur = sheet_progress[0]
-    sh_total = sheet_progress[1]
-
     for i, part in enumerate(chunk_cell(content, CELL_CHAR_LIMIT)):
 
         cell = all_cells[i]
@@ -53,53 +52,58 @@ def sheet_upload(worksheet, content, sheet_progress):
 
     total_cells_written = i + 1
 
-    # Update the cells
-    cell_chunk = 250
-    for i in range(0, total_cells_written, cell_chunk):
-        f = lambda : wks.update_cells(all_cells[i: i+cell_chunk])
-        t = threading.Thread(target=f)
+    data_count_queue = Queue()
+    # this queue is used to get the number of cells
+    # completed by a thread
+    # Threads will put (no of cells done) in queue
+    # progress bar print will get them and increment counter
+
+    thread_details ={
+        'wks': wks,
+        'data_count_queue': data_count_queue,
+    }
+
+    n_threads = N_THREADS
+    thread_list = []
+
+    for t_no, start, end in work_divider(
+                    no_of_cells=total_cells_written,
+                    n_threads=n_threads
+                    ):
+
+        t = threading.Thread(
+                target=worker_upload,
+                name='Thread ' + str(t_no),
+                args=(all_cells[start-1:end], thread_details)
+                )
+        # start-1, since start is 1-index, all_cells is 0-indexed
         t.daemon = True
-        t.start()
-
-        MyConsoleHandler.change_terminator('\r')
-        # Change the line terminator so all subsequent lines overwrite the 
-        # previous line, since we are printing a progress bar
-        # Where, overwriting will give illusion of loading animation
-
-        count = 0
-        interval = 0.5 # only display every `interval` seconds
-        length = 20 # length of the progress bar
-        cells_done = i
-        f_str = 'Sheet {:d}/{:d} | {:' + str(length) +'s} | {:d}/{:d} cells done'
-        while t.is_alive():
-
-            time.sleep(interval)
-
-            prog_str = '#' * (count%(length+1) ) + '-' * ( length - (count%(length+1) ))
-            msg = f_str.format(
-                        sh_cur, sh_total, 
-                        prog_str, 
-                        cells_done, total_cells_written)
-            logger.info(msg)
-
-            count += 1
-
-    
-    MyConsoleHandler.restore_terminator()
-    # Restoring '\n' as terminator
-    # So, next .info() will end with newline
-    # And subsequent calls to .info() will work normally
-
-    # Print completed progress bar
-    prog_str = '#' * length
-    msg = f_str.format(
-                sh_total, sh_total, 
-                prog_str, 
-                total_cells_written, total_cells_written)
-    logger.info(msg)
+        logger.debug('Created thread ' + t.name)
+        thread_list.append(t)
+        
+    # HANDLE ALL THREADING STUFF
+    thread_runner_factory(
+        thread_list, 
+        data_count_queue, 
+        sheet_progress)
 
     return total_cells_written
 
+def worker_upload(cell_list, thread_details):
+
+    wks = thread_details['wks']
+    data_count_queue = thread_details['data_count_queue']
+    name = threading.current_thread().name
+
+    logger.debug(name + ': Starting upload')
+    wks.update_cells(cell_list)
+    logger.debug(name + ': Done upload')
+
+    total_cells_done = len(cell_list)
+    data_count_queue.put(total_cells_done)
+    logger.debug(name + ' has put progress to queue')
+
+    logger.debug(name + ': end function')
 
 def sheet_download(worksheet, sheet_progress, cell_count):
     '''
@@ -113,10 +117,8 @@ def sheet_download(worksheet, sheet_progress, cell_count):
             * total sheets to be used       (int)
     '''
     wks = worksheet
-    sh_cur = sheet_progress[0]
-    sh_total = sheet_progress[1]
 
-    n_threads = 10
+    n_threads = N_THREADS
     data_list = [None] * n_threads
     data_lock = threading.Lock()
     data_count_queue = Queue()
@@ -143,16 +145,15 @@ def sheet_download(worksheet, sheet_progress, cell_count):
                 name='Thread ' + str(t_no),
                 args=(t_no, start, end, thread_details),
                 )
-
-        logger.debug('Created thread ' + str(t_no))
-        thread_list.append(t)
         t.daemon = True
+        logger.debug('Created thread ' + t.name)
+        thread_list.append(t)
 
     # HANDLE ALL THREADING STUFF
     thread_runner_factory(
             thread_list, 
             data_count_queue, 
-            sheet_progress=(sh_cur, sh_total))
+            sheet_progress)
     # the threads assign data to data_list, which is
     # passed as argument to each thread
     # Each thread can access data_list using data_lock
@@ -205,7 +206,7 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
         t.start()
         logger.debug('Started thread ' + t.name)
 
-    interval = 0.8 # sec
+    interval = 0.4 # sec
     counter = 1
     length = 20
     completed_cells = 0
@@ -222,10 +223,17 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
         # while queue is not empty
 
         prog = '#' * (counter%(length+1)) + '-' * (length - (counter%(length+1)))
-        latest_done_cells = data_count_queue.get()
-        data_count_queue.task_done()
-
-        completed_cells += latest_done_cells
+        try:
+            latest_done_cells = data_count_queue.get_nowait()
+            # Using nowait since during upload,
+            # queue takes time to fill up
+            # And normal get, blocks until queue gets an item
+            # get_nowait either gives a value or an exception
+        except queueEmpty as q:
+            pass
+        else:
+            # Only execute if queueEmpty error doesn't occur
+            completed_cells += latest_done_cells
 
         msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
         logger.info(msg)
@@ -236,7 +244,9 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
             logger.debug('All threads are unalive so emptying the queue and breaking out')
             while not data_count_queue.empty():
                 completed_cells += data_count_queue.get()
-                data_count_queue.task_done()
+                # Not using get_nowait() here, since
+                # at this line, either queue will have items or
+                # it will be empty
 
             # Break out after queue is emptied
             break 
@@ -251,7 +261,6 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
     msg = f_str.format(sh_cur, sh_total, prog, completed_cells)
     logger.info(msg)
 
-    
     logger.info("All threads are aliven't!")
 
     for t in thread_list:
@@ -261,14 +270,18 @@ def thread_runner_factory(thread_list, data_count_queue, sheet_progress):
 
 
 def work_divider(no_of_cells, n_threads):
-    '''Divide the no of cells almost equally among n_threads'''
+    '''Divide the no of cells almost equally among n_threads
+
+    no_of_cells = The number of cells we need to divide among threads
+    n_threads = The number of threads among which we divide the cells
+    '''
 
     # https://math.stackexchange.com/a/1081099
     
     N = no_of_cells
     M = n_threads
     for i, k in enumerate(range(M)):
-        start_index = (N * k) // M + 1
+        start_index = (N * k) // M + 1 # +1 since cells are 1-indexed
         inc = (N *(k+1))//M - start_index 
         end_index = start_index + inc
         
