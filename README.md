@@ -179,7 +179,14 @@ This JSON file is your only way to access the file contents that you have stored
 
 You can share this file with your friends to share your uploaded files with your friends.
 
+# Notable Features
 
+* Your file is divided into pieces of ~50 * 10^6 bytes and stored separately in a single Sheet.
+* You can resume uploading and downloading if you were interrupted. The program automatically tracks this and skips sheets if they have already been uploaded/downloaded, thus, reducing your internet usage.
+* Multiple threads are used for uploading and downloading. This speeds up the uploading and downloading, since multiple concurrent connections can send/receive data simultaneously.
+* File Chunking. Due to file chunking methods, RAM usage won't increase for bigger input files.
+* Only a single file can be uploaded, but you can zip up all your files into one archive and upload that.
+* Uploading is a bit slow since writing data to Sheets takes longer than reading data. Hence, downloading is a lot faster than uploading.
 
 # Liability
 
