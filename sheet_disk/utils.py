@@ -286,6 +286,19 @@ def work_divider(no_of_cells, n_threads):
         start_index = (N * k) // M + 1 # +1 since cells are 1-indexed
         inc = (N *(k+1))//M - start_index 
         end_index = start_index + inc
+
+        if end_index - start_index < 0:
+            # there is no valid range between the indices
+            # this will usually happen when file is really small
+            # or when remaining data is really small
+            # as compared to a single cell content and n_threads
+            # for example,
+            # there's only 2 cells worth of data, and we are using 10 threads
+            # then only 2 threads will run properly and others will throw exceptions
+            # hence, skip this thread
+            i = i - 1 # this will be incremented in next iteration
+            # don't yield this pair of start_index and end_index
+            continue
         
         # i is the thread number
         yield i, start_index, end_index
