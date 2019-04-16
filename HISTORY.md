@@ -8,6 +8,7 @@ Unreleased
 	
 	* If files were too small, then the no of cells assigned to each thread would become negative, and thus causing an exception.
 - Add "Unreleased" section in HISTORY.md
+- Move `key_list` to be the last entry in the JSON file, so as to show other more important human readable attributes before the `key_list` which can be very long for big files.
 
 0.1 (2018-12-21)
 --------------------

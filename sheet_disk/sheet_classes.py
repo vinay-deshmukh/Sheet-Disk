@@ -113,8 +113,8 @@ class SheetUpload:
                 'name' : self.name,
                 'complete_upload': complete_upload,
                 'n_sheets': self.n_sheets,
-                'key_list': self.key_list,
                 'version': __version__,
+                'key_list': self.key_list,
             }
 
         # include cell count only if file is complete
@@ -125,6 +125,18 @@ class SheetUpload:
         if os.path.exists(json_filename):
             logger.debug('JSON file already exists, creating new with timestamp')
             json_filename = json_filename.replace('.json', ' ' + right_now() + '.json')
+
+        # Store key_list in separate object
+        key_list = json_obj['key_list']
+        # Remove key_list from json_obj
+        del json_obj['key_list']
+        # Insert it at the end
+        json_obj['key_list'] = key_list
+        # Key list has been moved to the end of the json,
+        # so as to show other details before the key_list
+        # Key_list can be very long for large files, and user
+        # will need to scroll down a lot of lines,
+        # just to see the version, and other attributes.
 
         with open(json_filename, 'w') as f:
             logger.info('Creating JSON file!')
