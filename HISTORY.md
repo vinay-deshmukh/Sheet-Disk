@@ -2,6 +2,13 @@
 Release History
 =================================
 
+Unreleased
+-------------------
+- Fix: For really small files
+	
+	* If files were too small, then the no of cells assigned to each thread would become negative, and thus causing an exception.
+- Add "Unreleased" section in HISTORY.md
+
 0.1 (2018-12-21)
 --------------------
 
