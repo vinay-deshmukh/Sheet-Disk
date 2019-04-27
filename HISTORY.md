@@ -4,6 +4,10 @@ Release History
 
 Unreleased
 -------------------
+
+
+0.1.1 (2019-04-27)
+-------------------
 - Fix: For really small files
 	
 	* If files were too small, then the no of cells assigned to each thread would become negative, and thus causing an exception.
